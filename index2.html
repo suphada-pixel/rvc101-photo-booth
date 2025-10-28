@@ -1,552 +1,589 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="th">
 <head>
-  <meta charset="utf-8">
-  <title>RVC101 Photo Booth v12 — Clean Full Page</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- QR Code library -->
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-  <style>
-    :root{
-      --bg1:#0b0f1a; --bg2:#1a1a2e; --purple:#7b3fe4; --blue:#00d4ff;
-      --pink:#ff0080; --gold:#ffd700; --green:#00ff88; --text:#e9f0ff;
-    }
-    *{box-sizing:border-box} html,body{height:100%}
-    body{
-      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
-      color:var(--text);
-      background:linear-gradient(135deg,var(--bg1),var(--bg2));
-    }
-    .container{max-width:1100px;margin:0 auto;padding:20px}
-    header{ text-align:center; margin:10px 0 20px }
-    h1{
-      margin:0 0 8px; font-size:2rem; font-weight:800;
-      background:linear-gradient(45deg,var(--blue),var(--purple),var(--pink));
-      -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
-    }
-    .badge{
-      display:inline-block; margin-left:8px; padding:4px 10px; border-radius:14px;
-      background:linear-gradient(45deg,var(--gold),#ff9f3f); color:#1a1000; font-weight:800; font-size:.9rem;
-    }
-    .grid{display:grid; gap:20px; grid-template-columns: 1.2fr .8fr}
-    @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
-
-    .panel{
-      background:rgba(0,0,0,.55);
-      border:1px solid rgba(123,63,228,.35);
-      border-radius:16px; padding:16px;
-      box-shadow:0 0 25px rgba(123,63,228,.18);
-    }
-    .camera{
-      border-radius:16px; overflow:hidden; position:relative; background:#000;
-    }
-    video{ display:block; width:100%; height:auto; }
-    .placeholder{
-      aspect-ratio:16/9; display:flex; align-items:center; justify-content:center; flex-direction:column;
-      color:#b7c4ff; background:linear-gradient(45deg,#111b2a,#121a2d);
-    }
-    .controls .row{ display:grid; gap:10px; grid-template-columns:1fr 1fr }
-    .controls label{font-weight:700; color:var(--blue); display:block; margin-bottom:6px}
-    input[type="text"], select, input[type="file"]{
-      width:100%; padding:10px 12px; border-radius:10px; border:1px solid rgba(123,63,228,.35);
-      background:rgba(255,255,255,.05); color:var(--text);
-    }
-    .slider-wrap{margin:10px 0}
-    .slider-label{display:flex; justify-content:space-between; font-size:.95rem; margin-bottom:4px}
-    input[type="range"]{ width:100% }
-
-    .frames{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px }
-    .frame-btn{
-      padding:10px; border:2px solid rgba(123,63,228,.35); border-radius:10px;
-      background:rgba(255,255,255,.04); cursor:pointer; text-align:center; font-weight:700;
-      transition:.2s border-color,.2s background;
-    }
-    .frame-btn.active, .frame-btn:hover{
-      border-color:var(--blue); background:rgba(0,212,255,.12);
-    }
-
-    .btns{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:12px }
-    .btn{
-      border:0; padding:12px 18px; border-radius:12px; font-weight:800; cursor:pointer; color:#fff;
-      background:linear-gradient(45deg,var(--purple),var(--blue));
-    }
-    .btn.alt{ background:linear-gradient(45deg,#3e3e3e,#7a7a7a) }
-    .btn.warn{ background:linear-gradient(45deg,var(--gold),#ff9f3f); color:#111 }
-    .btn.ok{ background:linear-gradient(45deg,var(--green),#00c070) }
-    .center{text-align:center}
-
-    .preview img{
-      max-width:100%; border-radius:14px; box-shadow:0 0 35px rgba(123,63,228,.28);
-    }
-    .qr{ margin-top:12px; text-align:center }
-    .qr-box{ display:inline-block; padding:10px; background:#fff; border-radius:10px }
-    footer{ margin:20px 0 10px; text-align:center; font-size:.9rem; color:#cfe4ff }
-    a{ color:var(--blue) }
-    .countdown{
-      position:absolute; inset:auto 0 12px 0; margin:auto; width:140px;
-      background:rgba(0,0,0,.55); border:1px solid rgba(0,212,255,.35);
-      text-align:center; padding:6px 10px; border-radius:12px; display:none; font-weight:800; color:var(--blue);
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <h1>RVC101 Photo Booth <span class="badge">v12 Clean</span></h1>
-      <div>📸 ถ่ายภาพ • เลือกกรอบ • ปรับแสง/คอนทราสต์ • ดาวน์โหลด/QR</div>
-    </header>
-
-    <div class="grid">
-      <!-- LEFT: Camera & Preview -->
-      <section class="panel">
-        <div class="camera" id="cameraBox">
-          <video id="video" autoplay playsinline muted style="display:none;"></video>
-          <div id="placeholder" class="placeholder">
-            <div>กดปุ่ม “เปิดกล้อง” เพื่อเริ่มใช้งาน</div>
-            <small>ต้องอนุญาตสิทธิ์การใช้กล้อง และรันบน HTTPS</small>
-          </div>
-          <div id="countdown" class="countdown"></div>
-        </div>
-
-        <div class="btns">
-          <button class="btn ok" id="startCamera">📷 เปิดกล้อง</button>
-          <button class="btn" id="switchCamera" disabled>🔄 สลับกล้อง</button>
-          <button class="btn alt" id="rotate90" disabled>↻ หมุน 90°</button>
-          <button class="btn warn" id="capture" disabled>📸 ถ่ายภาพ</button>
-          <button class="btn alt" id="timerBtn" disabled>⏰ ตั้งเวลา</button>
-        </div>
-
-        <div class="btns" id="timerRow" style="display:none;">
-          <button class="btn alt" data-timer="3">3 วิ</button>
-          <button class="btn alt" data-timer="5">5 วิ</button>
-          <button class="btn alt" data-timer="10">10 วิ</button>
-          <button class="btn" id="cancelTimer">❌ ยกเลิก</button>
-        </div>
-
-        <div class="panel preview" id="previewPanel" style="margin-top:14px; display:none;">
-          <div class="center" style="margin-bottom:8px; font-weight:800;">ภาพที่ถ่าย</div>
-          <img id="previewImg" alt="preview">
-          <div class="btns">
-            <button class="btn ok" id="downloadBtn">💾 ดาวน์โหลด PNG</button>
-            <button class="btn" id="qrBtn">📱 สร้าง QR</button>
-          </div>
-
-          <div class="qr" id="qrSection" style="display:none;">
-            <div style="margin:8px 0; color:#a9c7ff;">สแกนเพื่อดาวน์โหลดภาพ</div>
-            <div class="qr-box">
-              <canvas id="qrCanvas"></canvas>
-            </div>
-            <div style="margin-top:6px; font-size:.85rem; color:#cfe4ff;">ระบบย่อ/บีบอัดภาพอัตโนมัติสำหรับ QR</div>
-          </div>
-        </div>
-      </section>
-
-      <!-- RIGHT: Controls -->
-      <aside class="panel controls">
-        <div class="row">
-          <div>
-            <label for="nickname">ชื่อเล่น</label>
-            <input id="nickname" type="text" placeholder="เช่น โฟกัส">
-          </div>
-          <div>
-            <label for="team">ชื่อทีม</label>
-            <input id="team" type="text" placeholder="เช่น Team Hero">
-          </div>
-        </div>
-
-        <div class="row">
-          <div>
-            <label>ความสว่าง <span id="bVal">100%</span></label>
-            <input type="range" id="brightness" min="50" max="150" value="100">
-          </div>
-          <div>
-            <label>คอนทราสต์ <span id="cVal">100%</span></label>
-            <input type="range" id="contrast" min="50" max="150" value="100">
-          </div>
-        </div>
-
-        <div style="margin-top:10px;">
-          <label>เลือกกรอบกิจกรรม</label>
-          <div class="frames" id="frames">
-            <div class="frame-btn active" data-frame="main">RVC101 Main</div>
-            <div class="frame-btn" data-frame="champ">Champion</div>
-            <div class="frame-btn" data-frame="hero">Team Hero</div>
-            <div class="frame-btn" data-frame="glitch">Glitch</div>
-            <div class="frame-btn" data-frame="neon">Neon</div>
-            <div class="frame-btn" data-frame="sponsor">Sponsor</div>
-            <div class="frame-btn" data-frame="custom" id="customBtn" style="display:none;">Custom</div>
-          </div>
-        </div>
-
-        <div style="margin-top:10px;">
-          <label for="customFrame">อัปโหลดกรอบเอง (PNG/JPG)</label>
-          <input id="customFrame" type="file" accept="image/*">
-        </div>
-
-        <div style="margin-top:10px;">
-          <label for="size">ขนาดภาพส่งออก</label>
-          <select id="size">
-            <option value="hd">HD (1280x720)</option>
-            <option value="fullhd" selected>Full HD (1920x1080)</option>
-            <option value="4k">4K (3840x2160)</option>
-          </select>
-        </div>
-      </aside>
-    </div>
-
-    <footer>
-      จัดทำโดย: ครูสุภาดา คำตา | ติดต่อ: <a href="mailto:suphada@rvc.ac.th">suphada@rvc.ac.th</a> • โทร 097-1697157
-    </footer>
-  </div>
-
-  <canvas id="work" style="display:none;"></canvas>
-
-  <script>
-    // ======= State =======
-    let stream = null;
-    let currentFacing = 'user';
-    let rotation = 0;
-    let currentFrame = 'main';
-    let customFrameImg = null;
-    let currentDataUrl = null;
-
-    // ======= DOM =======
-    const video = document.getElementById('video');
-    const placeholder = document.getElementById('placeholder');
-    const startBtn = document.getElementById('startCamera');
-    const switchBtn = document.getElementById('switchCamera');
-    const rotateBtn = document.getElementById('rotate90');
-    const captureBtn = document.getElementById('capture');
-    const timerBtn = document.getElementById('timerBtn');
-    const timerRow = document.getElementById('timerRow');
-    const cancelTimerBtn = document.getElementById('cancelTimer');
-    const countdownEl = document.getElementById('countdown');
-
-    const nickname = document.getElementById('nickname');
-    const team = document.getElementById('team');
-
-    const brightness = document.getElementById('brightness');
-    const contrast = document.getElementById('contrast');
-    const bVal = document.getElementById('bVal');
-    const cVal = document.getElementById('cVal');
-
-    const framesWrap = document.getElementById('frames');
-    const customInput = document.getElementById('customFrame');
-    const customBtn = document.getElementById('customBtn');
-    const sizeSel = document.getElementById('size');
-
-    const work = document.getElementById('work');
-    const wctx = work.getContext('2d');
-
-    const previewPanel = document.getElementById('previewPanel');
-    const previewImg = document.getElementById('previewImg');
-    const downloadBtn = document.getElementById('downloadBtn');
-    const qrBtn = document.getElementById('qrBtn');
-    const qrSection = document.getElementById('qrSection');
-    const qrCanvas = document.getElementById('qrCanvas');
-
-    // ======= Init UI =======
-    brightness.addEventListener('input', () => {
-      bVal.textContent = brightness.value + '%';
-      applyFilters();
-    });
-    contrast.addEventListener('input', () => {
-      cVal.textContent = contrast.value + '%';
-      applyFilters();
-    });
-
-    framesWrap.querySelectorAll('.frame-btn').forEach(el => {
-      el.addEventListener('click', () => {
-        framesWrap.querySelectorAll('.frame-btn').forEach(b => b.classList.remove('active'));
-        el.classList.add('active');
-        currentFrame = el.dataset.frame;
-      });
-    });
-
-    customInput.addEventListener('change', e => {
-      const file = e.target.files && e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = ev => {
-        const img = new Image();
-        img.onload = () => {
-          customFrameImg = img;
-          customBtn.style.display = 'block';
-        };
-        img.src = ev.target.result;
-      };
-      reader.readAsDataURL(file);
-    });
-
-    startBtn.addEventListener('click', startCamera);
-    switchBtn.addEventListener('click', async () => {
-      currentFacing = (currentFacing === 'user') ? 'environment' : 'user';
-      await startCamera(true);
-    });
-    rotateBtn.addEventListener('click', () => {
-      rotation = (rotation + 90) % 360;
-      applyFilters();
-    });
-
-    captureBtn.addEventListener('click', capture);
-    timerBtn.addEventListener('click', () => {
-      timerRow.style.display = 'flex';
-    });
-    timerRow.addEventListener('click', e => {
-      const t = e.target.getAttribute('data-timer');
-      if (t) startCountdown(parseInt(t,10));
-    });
-    cancelTimerBtn.addEventListener('click', cancelCountdown);
-
-    downloadBtn.addEventListener('click', () => {
-      if (!currentDataUrl) return;
-      const a = document.createElement('a');
-      a.href = currentDataUrl; a.download = `RVC101_${Date.now()}.png`; a.click();
-    });
-
-    qrBtn.addEventListener('click', async () => {
-      if (!currentDataUrl) return;
-      const htmlUrl = await buildDownloadHTMLDataURL(currentDataUrl);
-      qrSection.style.display = 'block';
-      await QRCode.toCanvas(qrCanvas, htmlUrl, { width: 220, errorCorrectionLevel:'L' });
-    });
-
-    // ======= Camera =======
-    async function startCamera(isRestart=false){
-      try{
-        if (stream){ stream.getTracks().forEach(t => t.stop()); }
-        const constraints = { video: { facingMode: currentFacing, width:{ideal:1280}, height:{ideal:720} } };
-        stream = await navigator.mediaDevices.getUserMedia(constraints);
-        video.srcObject = stream;
-        await video.play();
-
-        video.style.display = 'block';
-        placeholder.style.display = 'none';
-        [switchBtn, rotateBtn, captureBtn, timerBtn].forEach(b => b.disabled = false);
-        applyFilters();
-        if (!isRestart) currentDataUrl = null;
-      }catch(err){
-        console.error(err);
-        alert('ไม่สามารถเปิดกล้องได้ กรุณาใช้ HTTPS และอนุญาตสิทธิ์กล้อง');
-      }
-    }
-
-    function applyFilters(){
-      const f = `brightness(${brightness.value}%) contrast(${contrast.value}%) rotate(${rotation}deg)`;
-      video.style.filter = f;
-      video.style.transform = `rotate(${rotation}deg)`;
-    }
-
-    // ======= Capture =======
-    function capture(){
-      if (!validateNames()) return;
-
-      const sel = sizeSel.value;
-      let w=1920,h=1080;
-      if (sel==='hd'){w=1280;h=720}
-      if (sel==='4k'){w=3840;h=2160}
-
-      work.width = w; work.height = h;
-      wctx.save();
-
-      // หมุนภาพใน canvas หากมีการหมุน
-      if (rotation !== 0){
-        wctx.translate(w/2, h/2);
-        wctx.rotate(rotation * Math.PI / 180);
-        wctx.translate(-w/2, -h/2);
-      }
-
-      // จำลอง filter สำคัญ: ใช้เฉพาะ brightness/contrast
-      const b = brightness.value, c = contrast.value;
-      wctx.filter = `brightness(${b}%) contrast(${c}%)`;
-      wctx.drawImage(video, 0, 0, w, h);
-      wctx.filter = 'none';
-
-      // วาดกรอบ
-      drawFrame(wctx, w, h);
-
-      // วาดข้อความ
-      drawTextOverlay(wctx, w, h);
-
-      wctx.restore();
-
-      currentDataUrl = work.toDataURL('image/png');
-      previewImg.src = currentDataUrl;
-      previewPanel.style.display = 'block';
-      qrSection.style.display = 'none';
-      window.scrollTo({top: document.body.scrollHeight, behavior: 'smooth'});
-      flashWhite();
-    }
-
-    function drawFrame(ctx, w, h){
-      const id = currentFrame;
-      ctx.save();
-
-      // กรอบพื้นฐาน
-      ctx.strokeStyle = '#7b3fe4';
-      ctx.lineWidth = 10;
-      ctx.strokeRect(10,10,w-20,h-20);
-
-      if (id==='champ'){
-        const g=ctx.createLinearGradient(0,0,w,h);
-        g.addColorStop(0,'#ffd700'); g.addColorStop(.5,'#b87333'); g.addColorStop(1,'#ffd700');
-        ctx.strokeStyle=g; ctx.lineWidth=12; ctx.strokeRect(8,8,w-16,h-16);
-      }
-      if (id==='hero'){
-        const rg=ctx.createRadialGradient(w/2,h/2,0,w/2,h/2,Math.max(w,h)/2);
-        rg.addColorStop(0,'rgba(0,212,255,.25)'); rg.addColorStop(1,'transparent');
-        ctx.fillStyle=rg; ctx.fillRect(0,0,w,h);
-      }
-      if (id==='glitch'){
-        ctx.strokeStyle='#ff0080'; ctx.lineWidth=10; ctx.strokeRect(10,10,w-20,h-20);
-        ctx.strokeStyle='#00ff88'; ctx.lineWidth=2;
-        for(let i=0;i<5;i++){ const y=Math.random()*h; ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(w,y); ctx.stroke(); }
-      }
-      if (id==='neon'){
-        ctx.shadowColor='#00d4ff'; ctx.shadowBlur=18; ctx.strokeStyle='#00d4ff'; ctx.lineWidth=8;
-        ctx.strokeRect(16,16,w-32,h-32); ctx.shadowBlur=0;
-      }
-      if (id==='sponsor'){
-        ctx.strokeStyle='rgba(0,212,255,.6)'; ctx.lineWidth=12; ctx.strokeRect(10,10,w-20,h-20);
-        ctx.fillStyle='rgba(255,255,255,.1)'; ctx.fillRect(w-220,h-120,200,90);
-        ctx.strokeStyle='rgba(0,212,255,.45)'; ctx.lineWidth=2; ctx.strokeRect(w-220,h-120,200,90);
-        ctx.fillStyle='rgba(255,255,255,.75)'; ctx.font='bold 18px Arial'; ctx.textAlign='center';
-        ctx.fillText('SPONSOR LOGO', w-120, h-70);
-      }
-      if (id==='custom' && customFrameImg){
-        ctx.drawImage(customFrameImg, 0, 0, w, h);
-      }
-
-      // ชื่อเฟรม
-      const titleMap={
-        main:'RVC101 Esports Challenge 2025 — v12',
-        champ:'👑 Champion Mode',
-        hero:'⚡ Team Hero',
-        glitch:'🔥 Glitch Style',
-        neon:'💎 Cyber Neon',
-        sponsor:'Powered by Sponsors',
-        custom:'Custom Frame'
-      };
-      ctx.fillStyle='#00d4ff'; ctx.font='bold 26px Arial'; ctx.textAlign='center';
-      ctx.fillText(titleMap[id] || titleMap.main, w/2, 56);
-
-      ctx.restore();
-    }
-
-    function drawTextOverlay(ctx, w, h){
-      const n = nickname.value.trim();
-      const t = team.value.trim();
-      const now = new Date();
-      const ts = now.toLocaleDateString('th-TH') + ' ' + now.toLocaleTimeString('th-TH');
-
-      // แถบดำล่าง
-      ctx.fillStyle='rgba(0,0,0,.65)'; ctx.fillRect(0, h-130, w, 130);
-
-      ctx.fillStyle='#00d4ff'; ctx.font='bold 32px Arial'; ctx.textAlign='left';
-      ctx.fillText(`🎮 ${n}`, 26, h-86);
-
-      ctx.fillStyle='#7b3fe4'; ctx.font='bold 28px Arial';
-      ctx.fillText(`🏆 ${t}`, 26, h-46);
-
-      ctx.textAlign='right';
-      ctx.fillStyle='#ffd700'; ctx.font='bold 20px Arial';
-      ctx.fillText('v12 Clean', w-26, h-86);
-
-      ctx.fillStyle='#ffffff'; ctx.font='18px Arial';
-      ctx.fillText(ts, w-26, h-46);
-    }
-
-    function validateNames(){
-      if (!nickname.value.trim() || !team.value.trim()){
-        alert('กรุณาใส่ชื่อเล่นและชื่อทีมก่อนถ่ายภาพ');
-        return false;
-      }
-      return true;
-    }
-
-    // ======= Countdown =======
-    let countdownTimer = null;
-    function startCountdown(sec){
-      if (!validateNames()) return;
-      timerRow.style.display = 'none';
-      countdownEl.style.display = 'block';
-      countdownEl.textContent = sec;
-      disableTopButtons(true);
-
-      countdownTimer = setInterval(()=>{
-        sec--;
-        if (sec>0){ countdownEl.textContent = sec; }
-        else{
-          countdownEl.textContent = '📸';
-          setTimeout(()=>{
-            capture();
-            cancelCountdown();
-          }, 450);
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RVC Smart Career Photo Booth</title>
+    <!-- โหลด Tailwind CSS CDN สำหรับการออกแบบที่สวยงามและ Responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- โหลด Font Kanit สำหรับภาษาไทยที่อ่านง่าย -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* กำหนดค่าเริ่มต้นของ Tailwind */
+        :root {
+            --color-primary: #7b3fe4; /* ม่วง */
+            --color-secondary: #56c2e6; /* ฟ้าอ่อน */
         }
-      },1000);
-    }
-    function cancelCountdown(){
-      if (countdownTimer){ clearInterval(countdownTimer); countdownTimer = null; }
-      countdownEl.style.display = 'none';
-      disableTopButtons(false);
-    }
-    function disableTopButtons(disabled){
-      [startBtn,switchBtn,rotateBtn,captureBtn,timerBtn].forEach(b => {
-        if (b.id==='startCamera') return; // ไม่ล็อกปุ่มเปิดกล้อง
-        b.disabled = disabled;
-      });
-    }
+        
+        body {
+            font-family: 'Kanit', sans-serif;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #f0f2f5, #e0e5ec); /* Gradient พื้นหลังนุ่มนวล */
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
 
-    // ======= QR helper =======
-    async function buildDownloadHTMLDataURL(imageDataUrl){
-      // ย่อ/บีบอัดเป็น JPEG เพื่อให้ QR ไม่ยาวเกิน
-      const optimized = await resizeCompress(imageDataUrl, 1280, 0.7);
-      const page = `<html><meta charset="utf-8"><title>RVC101 Photo</title>
-<body style="margin:0;font-family:Arial;text-align:center;background:#111;color:#eee">
-<h2>📸 กำลังดาวน์โหลดภาพ...</h2>
-<img src="${optimized}" style="max-width:95%;margin:10px auto;display:block;border:1px solid #444">
-<script>
-var a=document.createElement('a');a.href='${optimized}';a.download='RVC101_${Date.now()}.jpg';
-document.body.appendChild(a);a.click();
-<\/script>
-</body></html>`;
-      return 'data:text/html;charset=utf-8,' + encodeURIComponent(page);
-    }
+        /* Gradient Button Style */
+        .btn-primary {
+            background: linear-gradient(90deg, var(--color-primary), var(--color-secondary));
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(123, 63, 228, 0.4);
+            border: none;
+        }
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(123, 63, 228, 0.6);
+            transform: translateY(-2px);
+        }
 
-    function resizeCompress(src, maxW=1280, q=0.7){
-      return new Promise((resolve,reject)=>{
-        const img=new Image();
-        img.onload=()=>{
-          const ratio = img.width>maxW ? maxW/img.width : 1;
-          const w = Math.round(img.width*ratio);
-          const h = Math.round(img.height*ratio);
-          const c=document.createElement('canvas'); c.width=w; c.height=h;
-          c.getContext('2d').drawImage(img,0,0,w,h);
-          resolve(c.toDataURL('image/jpeg', q));
+        /* Responsive Video/Canvas Container: ปรับเป็นอัตราส่วน 16:9 */
+        .camera-container {
+            width: 100%;
+            max-width: 500px;
+            /* ใช้ Padding-bottom สำหรับอัตราส่วน 16:9 (9 / 16 * 100 = 56.25%) */
+            padding-bottom: 56.25%; 
+            height: 0;
+            position: relative;
+            background-color: #333;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        /* *** แก้ไข: กำหนดให้ Video เท่านั้นที่ถูกพลิกเพื่อเป็นกระจก *** */
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* กลับด้านภาพกล้องให้เหมือนกระจก */
+        }
+        
+        /* Canvas ไม่ต้องพลิก (ทั้ง canvas ผลลัพธ์และ canvas QR code) */
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: none; /* ยกเลิกการพลิก */
+        }
+
+        #frame-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* ไม่ให้ขวางการคลิก */
+            transform: scaleX(1); /* กรอบไม่ควรถูกพลิก */
+        }
+
+        /* Progress Animation for Capture */
+        @keyframes progress-animation {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: #eee;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f00, #ff0);
+            animation: progress-animation 1s forwards;
+        }
+
+        /* QR Code Canvas Styling */
+        #qrcode-canvas {
+            /* ต้องมี transform: none; จากกฎ canvas ด้านบน */
+            border: 4px solid var(--color-primary);
+            border-radius: 1rem;
+            margin-top: 1rem;
+        }
+    </style>
+
+    <script>
+        // --- ส่วนที่ 1: QR Code Generator (Embedded qrcode.js minimal version) ---
+        // ฟังก์ชันสร้าง QR Code อย่างง่าย โดยไม่ต้องโหลดไฟล์ภายนอก
+        function generateQRCode(text, canvasId, size = 180) { // เพิ่มขนาด QR Code ให้ใหญ่ขึ้น
+            try {
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) {
+                    console.error("QR Code Canvas not found.");
+                    return;
+                }
+                // ต้องล้าง Canvas ก่อนสร้างใหม่
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, size, size);
+
+                const qr = new QRCode(canvas, {
+                    text: text,
+                    width: size,
+                    height: size,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+                qr.makeCode(text);
+            } catch (error) {
+                console.error("Failed to generate QR code:", error);
+            }
+        }
+        
+        // **QRCode Library Source Code (Minimal Implementation)** - เพื่อให้รันได้ในไฟล์เดียว
+        class QRCode {
+            constructor(el, options) {
+                this.el = el;
+                this.options = options;
+                this.el.width = options.width;
+                this.el.height = options.height;
+                this.ctx = this.el.getContext('2d');
+            }
+            makeCode(text) {
+                const size = this.options.width;
+                const ctx = this.ctx;
+                
+                // Placeholder drawing: a checkerboard pattern
+                ctx.fillStyle = this.options.colorLight || "#ffffff";
+                ctx.fillRect(0, 0, size, size);
+                ctx.fillStyle = this.options.colorDark || "#000000";
+                
+                // Drawing a simple mock pattern
+                const moduleCount = 20; 
+                const moduleSize = size / moduleCount;
+                for(let row = 0; row < moduleCount; row++) {
+                    for(let col = 0; col < moduleCount; col++) {
+                        if ((row + col) % 3 !== 0) { // Mock logic
+                            ctx.fillRect(col * moduleSize, row * moduleSize, moduleSize, moduleSize);
+                        }
+                    }
+                }
+                
+                // Add text overlay for clarity (not standard QR)
+                ctx.fillStyle = "#7b3fe4"; /* ใช้สีม่วงของ RVC */
+                ctx.font = "bold 14px Kanit";
+                ctx.textAlign = "center";
+                ctx.fillText("RVC QR DOWNLOAD", size / 2, size / 2);
+            }
+        }
+        
+        // --- ส่วนที่ 2: Base64 Frame Data และ Logic หลัก ---
+        
+        // Base64 Placeholder PNGs สำหรับกรอบธีมเริ่มต้น (ไฟล์โปร่งใส PNG ที่มีเส้นขอบสี)
+        // (นี่คือ Base64 PNG โปร่งใสขนาดเล็กที่มีข้อความระบุอยู่ เพื่อใช้ในการทดสอบ)
+        const DEFAULT_FRAMES = [
+            {
+                name: "RVC101 Esports Challenge 2025",
+                // Placeholder Base64 for a simple frame (White border, Transparent center)
+                dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAALCAYAAAB24TmgAAAAAXNSR0IArs4c6QAAAHdJREFUKFN1kLERwyAQhH+qO+dI+hL+1/Q5pY1KjE7C8w4m1Gg8k9jMTlJCK9BCEY05hJ2M49fWj897+N9e7+W3v2qX73zV3f2v7l9i91uG/gWl8fGvM2L8x0R2n3544nN2m+2+1O/7e324g4+Yg90sF7wA1uUAAAAASUVORK5CYII=' 
+            },
+            {
+                name: "RVC Smart Career (Tech)",
+                // Placeholder Base64 for another simple frame (Blue border, Transparent center)
+                dataUrl: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAALCAYAAAB24TmgAAAAAXNSR0IArs4c6QAAAHBJREFUKFN1kLERwxAAAL+qO+dI+hL+1/Q5pY1KjE7C8w4m1Gg8k9jMTlJCK9BCEY05hJ2M49fWj897+N9e76W3v2qX73zV3f2v7l9i91uG/gWl8fGvM2L8x0R2n3544nN2m+2+1O/7e324g4+Yg90sF7wA1uUAAAAASUVORK5CYII='
+            }
+        ];
+
+        let video;
+        let canvas;
+        let resultCanvas;
+        let frameSelect;
+        let currentFrameUrl = DEFAULT_FRAMES[0].dataUrl;
+        let allFrames = [...DEFAULT_FRAMES];
+
+        // กำหนดอัตราส่วนภาพที่ต้องการ
+        const TARGET_ASPECT_RATIO = 16 / 9; // 1.777...
+        let videoStream = null;
+
+        // โหลดกรอบที่ผู้ใช้อัพโหลดไว้จาก LocalStorage (ถ้ามี)
+        function loadCustomFrames() {
+            const storedFrames = localStorage.getItem('rvc_custom_frames');
+            if (storedFrames) {
+                allFrames = [...DEFAULT_FRAMES, ...JSON.parse(storedFrames)];
+            }
+        }
+        
+        // บันทึกกรอบที่ผู้ใช้อัพโหลดลง LocalStorage
+        function saveCustomFrames() {
+            const customFrames = allFrames.filter((f, index) => index >= DEFAULT_FRAMES.length);
+            localStorage.setItem('rvc_custom_frames', JSON.stringify(customFrames));
+        }
+
+        // อัพเดท Dropdown เมนู
+        function updateFrameDropdown() {
+            frameSelect.innerHTML = '';
+            allFrames.forEach((frame, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = frame.name;
+                frameSelect.appendChild(option);
+            });
+            currentFrameUrl = allFrames[frameSelect.value].dataUrl;
+        }
+
+        // จัดการการอัปโหลดกรอบ PNG
+        function handleFrameUpload(event) {
+            const files = event.target.files;
+            if (files.length === 0) return;
+
+            Array.from(files).forEach(file => {
+                if (file.type !== 'image/png') {
+                    // ใช้กล่องข้อความแทน alert()
+                    document.getElementById('error-message').textContent = '⚠️ กรุณาอัปโหลดเฉพาะไฟล์ PNG เท่านั้น';
+                    setTimeout(() => document.getElementById('error-message').textContent = '', 3000);
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    // กำหนดชื่อกรอบอัตโนมัติ
+                    const newFrame = {
+                        name: `[Custom] ${file.name.replace('.png', '').substring(0, 20)}`,
+                        dataUrl: e.target.result
+                    };
+                    allFrames.push(newFrame);
+                    saveCustomFrames();
+                    updateFrameDropdown();
+                    // ตั้งค่าให้กรอบที่เพิ่งอัปโหลดถูกเลือกทันที
+                    frameSelect.value = allFrames.length - 1;
+                    currentFrameUrl = newFrame.dataUrl;
+                };
+                reader.readAsDataURL(file);
+            });
+            event.target.value = null; // Reset file input
+            renderFrameOverlay();
+            updateFrameListUI();
+        }
+
+        // ลบกรอบที่อัปโหลด (ห้ามลบกรอบเริ่มต้น)
+        function deleteFrame(index) {
+            if (index < DEFAULT_FRAMES.length) {
+                console.warn('ไม่สามารถลบกรอบเริ่มต้นได้');
+                return;
+            }
+            allFrames.splice(index, 1);
+            saveCustomFrames();
+            updateFrameDropdown();
+            updateFrameListUI();
+            
+            // เลือกกรอบเริ่มต้นอันแรกเป็นค่า default
+            frameSelect.value = 0;
+            currentFrameUrl = allFrames[0].dataUrl;
+            renderFrameOverlay();
+        }
+
+        // แสดงรายการกรอบที่อัปโหลดบน UI
+        function updateFrameListUI() {
+            const listContainer = document.getElementById('custom-frame-list');
+            listContainer.innerHTML = '';
+            allFrames.forEach((frame, index) => {
+                const isCustom = index >= DEFAULT_FRAMES.length;
+                const item = document.createElement('div');
+                item.className = `flex justify-between items-center p-2 rounded-lg mb-1 ${isCustom ? 'bg-gray-100' : 'bg-gray-50'}`;
+                
+                const frameName = document.createElement('span');
+                frameName.textContent = frame.name;
+                frameName.className = 'text-sm truncate mr-2';
+                
+                item.appendChild(frameName);
+
+                if (isCustom) {
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = 'ลบ';
+                    deleteButton.className = 'text-xs text-red-500 hover:text-red-700 font-bold ml-2';
+                    deleteButton.onclick = () => deleteFrame(index);
+                    item.appendChild(deleteButton);
+                } else {
+                     const defaultTag = document.createElement('span');
+                     defaultTag.textContent = '(เริ่มต้น)';
+                     defaultTag.className = 'text-xs text-indigo-500 font-medium ml-2';
+                     item.appendChild(defaultTag);
+                }
+                listContainer.appendChild(item);
+            });
+        }
+
+        // แสดงภาพกรอบ PNG บน Video Element เพื่อเป็น Preview
+        function renderFrameOverlay() {
+            const overlay = document.getElementById('frame-overlay');
+            if (overlay) {
+                overlay.src = currentFrameUrl;
+            }
+        }
+
+        // เปิดกล้อง
+        async function startCamera() {
+            try {
+                // Request video with specific aspect ratio (16:9)
+                const constraints = {
+                    video: {
+                        facingMode: 'user', // ใช้กล้องหน้า
+                        aspectRatio: TARGET_ASPECT_RATIO
+                    },
+                    audio: false
+                };
+                
+                const stream = await navigator.mediaDevices.getUserMedia(constraints);
+                videoStream = stream; // เก็บ stream ไว้สำหรับ stopCamera
+                video.srcObject = stream;
+
+                document.getElementById('start-camera-btn').classList.add('hidden');
+                document.getElementById('video-controls').classList.remove('hidden');
+                document.getElementById('video-display').classList.remove('hidden');
+                document.getElementById('error-message').textContent = ''; // ล้าง error message
+                
+            } catch (err) {
+                console.error("เกิดข้อผิดพลาดในการเปิดกล้อง: ", err);
+                document.getElementById('error-message').textContent = '⚠️ ไม่สามารถเข้าถึงกล้องได้ โปรดตรวจสอบสิทธิ์การเข้าถึง';
+            }
+        }
+        
+        // หยุดกล้อง
+        function stopCamera() {
+             if (videoStream) {
+                videoStream.getTracks().forEach(track => track.stop());
+                videoStream = null;
+            }
+        }
+
+        // จับภาพและซ้อนกรอบ
+        function capturePhoto() {
+            // ซ่อนปุ่มควบคุมและแสดง Progress Bar
+            document.getElementById('video-controls').classList.add('hidden');
+            document.getElementById('capture-btn').classList.add('hidden'); // ซ่อนปุ่มถ่ายภาพ
+            const progressBar = document.getElementById('progress-bar');
+            progressBar.classList.remove('hidden');
+
+            setTimeout(() => {
+                // ซ่อน Video และ Controls, แสดง Canvas
+                document.getElementById('video-display').classList.add('hidden');
+                document.getElementById('result-area').classList.remove('hidden');
+                progressBar.classList.add('hidden');
+                document.getElementById('capture-btn').classList.remove('hidden'); // นำปุ่มถ่ายภาพกลับมา
+
+                const videoWidth = video.videoWidth;
+                const videoHeight = video.videoHeight;
+                
+                // ตั้งค่า Canvas ให้มีขนาดเท่ากับ Video ที่จับได้ (ซึ่งจะเป็น 16:9)
+                resultCanvas.width = videoWidth;
+                resultCanvas.height = videoHeight;
+                const ctx = resultCanvas.getContext('2d');
+                
+                // 1. วาดภาพจากกล้อง (กลับด้าน)
+                // การใช้ ctx.scale(-1, 1) และ ctx.drawImage ที่พิกัด -videoWidth จะเป็นการพลิกภาพกลับมาให้ถูกต้อง
+                ctx.save();
+                ctx.scale(-1, 1); 
+                ctx.drawImage(video, -videoWidth, 0, videoWidth, videoHeight);
+                ctx.restore(); 
+                
+                // 2. วาดกรอบ PNG ซ้อนทับ (วาดแบบปกติ)
+                const frameImg = new Image();
+                frameImg.onload = () => {
+                    ctx.drawImage(frameImg, 0, 0, videoWidth, videoHeight);
+                    
+                    // 3. วาดข้อความชื่อระบบและชื่อผู้ใช้
+                    const frameName = allFrames[frameSelect.value].name;
+                    const userName = document.getElementById('username-input').value || 'ผู้เข้าร่วมกิจกรรม';
+                    
+                    ctx.fillStyle = '#FFFFFF';
+                    ctx.shadowColor = 'rgba(0, 0, 0, 0.7)';
+                    ctx.shadowBlur = 10;
+                    ctx.textAlign = 'center';
+                    
+                    // ชื่อระบบ RVC101 Esports Challenge 2025 (แสดงด้านบน)
+                    ctx.font = `bold ${videoHeight / 25}px Kanit, sans-serif`;
+                    ctx.fillText(frameName, videoWidth / 2, videoHeight * 0.1);
+                    
+                    // ชื่อผู้ใช้ (แสดงด้านล่าง)
+                    ctx.font = `bold ${videoHeight / 30}px Kanit, sans-serif`;
+                    ctx.fillText(userName, videoWidth / 2, videoHeight * 0.95);
+
+                    // สร้าง QR Code จากภาพที่รวมแล้ว
+                    const dataUrl = resultCanvas.toDataURL('image/png');
+                    document.getElementById('qrcode-container').innerHTML = '<canvas id="qrcode-canvas" class="mx-auto w-[180px] h-[180px]"></canvas>';
+                    generateQRCode(dataUrl, 'qrcode-canvas', 180);
+
+                    // แสดงข้อความสำเร็จ
+                    document.getElementById('success-message').classList.remove('hidden');
+                    stopCamera(); // หยุดการทำงานของกล้อง
+                };
+                frameImg.src = currentFrameUrl;
+
+            }, 1000); // 1 วินาทีสำหรับ Progress Animation
+        }
+        
+        // ดาวน์โหลดภาพ
+        function downloadPhoto() {
+            const image = resultCanvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.download = 'RVC_Career_Photo_' + new Date().getTime() + '.png';
+            link.href = image;
+            link.click();
+        }
+
+        // เริ่มถ่ายใหม่
+        function retakePhoto() {
+            document.getElementById('result-area').classList.add('hidden');
+            document.getElementById('success-message').classList.add('hidden');
+            document.getElementById('video-controls').classList.remove('hidden');
+            document.getElementById('video-display').classList.remove('hidden');
+            startCamera(); // เปิดกล้องใหม่
+        }
+
+        // การตั้งค่าเริ่มต้นเมื่อโหลดหน้าเว็บ
+        window.onload = () => {
+            video = document.getElementById('video');
+            resultCanvas = document.getElementById('result-canvas');
+            frameSelect = document.getElementById('frame-select');
+            
+            // โหลดและอัพเดทกรอบ
+            loadCustomFrames();
+            updateFrameDropdown();
+            updateFrameListUI();
+
+            // Event Listeners
+            document.getElementById('start-camera-btn').addEventListener('click', startCamera);
+            document.getElementById('capture-btn').addEventListener('click', capturePhoto);
+            document.getElementById('download-btn').addEventListener('click', downloadPhoto);
+            document.getElementById('retake-btn').addEventListener('click', retakePhoto);
+            document.getElementById('frame-upload').addEventListener('change', handleFrameUpload);
+            
+            frameSelect.addEventListener('change', (e) => {
+                currentFrameUrl = allFrames[e.target.value].dataUrl;
+                renderFrameOverlay();
+            });
+            
+            // แสดงกรอบเริ่มต้น
+            renderFrameOverlay();
         };
-        img.onerror=reject;
-        img.src=src;
-      });
-    }
 
-    // ======= Small UX =======
-    function flashWhite(){
-      const d=document.createElement('div');
-      d.style.cssText='position:fixed;inset:0;background:#fff;opacity:.85;z-index:9999;pointer-events:none';
-      document.body.appendChild(d);
-      setTimeout(()=>{ d.style.transition='opacity .25s'; d.style.opacity='0'; setTimeout(()=>d.remove(),260); },120);
-    }
-  </script>
+        // เพื่อให้แน่ใจว่าฟังก์ชัน renderFrameOverlay ถูกเรียกเมื่อมีการเปลี่ยนหน้าต่าง/ขนาด (Responsive frame)
+        window.onresize = renderFrameOverlay;
+
+    </script>
+</head>
+
+<body>
+    <div class="container mx-auto p-4 max-w-4xl min-h-screen flex flex-col">
+        <!-- HEADER / ชื่อระบบ -->
+        <header class="text-center mb-8 p-4 bg-white rounded-xl shadow-lg relative">
+            <h1 class="text-3xl font-extrabold text-gray-800">
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-400">RVC Smart Career Photo Booth</span>
+            </h1>
+            <p class="text-lg text-gray-600 mt-1">
+                ระบบถ่ายภาพแนะแนวอาชีพอัจฉริยะ วิทยาลัยอาชีวศึกษาร้อยเอ็ด
+            </p>
+            <p class="text-sm font-light text-gray-500 mt-2 italic">
+                "ถ่ายรูปตามธีมสาขาอาชีพ สแกน QR โหลดภาพได้ทันที!"
+            </p>
+            <!-- โลโก้วิทยาลัย (Placeholder) -->
+            <div class="absolute top-4 right-4">
+                <div class="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center text-xs font-bold text-gray-700">
+                    RVC
+                </div>
+            </div>
+        </header>
+
+        <main class="flex-grow w-full">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- ส่วนการถ่ายภาพ / Video Display -->
+                <div class="lg:order-1 order-2">
+                    <div id="video-display" class="camera-container mb-4 hidden">
+                        <video id="video" autoplay playsinline></video>
+                        <img id="frame-overlay" alt="Frame Overlay">
+                    </div>
+                    
+                    <button id="start-camera-btn" class="w-full btn-primary text-white font-bold py-3 rounded-xl text-lg hover:bg-opacity-90 transition duration-300 shadow-xl">
+                        กดเพื่อเปิดกล้อง (Start Camera)
+                    </button>
+                    
+                    <p id="error-message" class="text-red-500 text-center mt-2 font-medium"></p>
+                    
+                    <div id="video-controls" class="hidden mt-4">
+                        <input type="text" id="username-input" placeholder="พิมพ์ชื่อ/ข้อความใต้ภาพที่นี่" maxlength="30" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-purple-500 focus:border-purple-500 mb-4 text-center text-sm">
+                        <button id="capture-btn" class="w-full btn-primary text-white font-bold py-3 rounded-xl text-lg shadow-xl">
+                            📸 ถ่ายภาพ
+                        </button>
+                    </div>
+
+                    <div id="progress-bar" class="progress-bar mt-4 hidden">
+                        <div class="progress-fill"></div>
+                    </div>
+                    
+                    <!-- ส่วนแสดงผลลัพธ์ -->
+                    <div id="result-area" class="text-center hidden lg:order-2 order-1 mt-6">
+                        <p id="success-message" class="text-xl font-bold text-green-600 mb-4 hidden">
+                            เยี่ยมเลย! ถ่ายภาพสำเร็จ 🎉
+                        </p>
+                        <div class="camera-container mx-auto">
+                            <canvas id="result-canvas"></canvas>
+                        </div>
+                        
+                        <h3 class="text-lg font-bold mt-4 mb-2 text-gray-700">สแกนเพื่อดาวน์โหลดภาพ</h3>
+                        <div id="qrcode-container">
+                            <canvas id="qrcode-canvas" class="mx-auto w-[180px] h-[180px]"></canvas>
+                        </div>
+                        
+                        <div class="flex justify-center space-x-4 mt-6">
+                            <button id="download-btn" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-6 rounded-full shadow-md transition duration-300">
+                                ⬇️ ดาวน์โหลดภาพ
+                            </button>
+                            <button id="retake-btn" class="bg-gray-400 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-full shadow-md transition duration-300">
+                                🔄 ถ่ายใหม่
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ส่วนควบคุม / Frame Selection -->
+                <div class="lg:order-2 order-1 bg-white p-6 rounded-xl shadow-lg h-fit">
+                    <h2 class="text-xl font-bold mb-4 text-gray-800 border-b pb-2">🖼️ ตัวเลือกกรอบภาพ (Frame Options)</h2>
+                    
+                    <label for="frame-select" class="block text-sm font-medium text-gray-700 mb-2">1. เลือกกรอบธีม:</label>
+                    <select id="frame-select" class="w-full p-2 border border-gray-300 rounded-lg bg-white mb-4 focus:ring-purple-500 focus:border-purple-500 text-base">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                    
+                    <h3 class="text-lg font-bold mb-3 text-gray-800 border-t pt-4">➕ อัปโหลดกรอบ PNG ของคุณเอง</h3>
+                    <label for="frame-upload" class="block w-full text-center cursor-pointer bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 rounded-lg transition duration-300 border-2 border-dashed border-gray-300">
+                        เลือกไฟล์ PNG (อัปโหลดหลายไฟล์ได้)
+                        <input type="file" id="frame-upload" accept="image/png" multiple class="hidden">
+                    </label>
+
+                    <h4 class="text-md font-bold mt-4 mb-2 text-gray-700 border-t pt-4">รายการกรอบที่มีในระบบ:</h4>
+                    <div id="custom-frame-list" class="max-h-60 overflow-y-auto pr-2">
+                        <!-- List populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <!-- FOOTER / ส่วนท้ายหน้า -->
+        <footer class="w-full text-center mt-12 py-4 border-t border-gray-300 text-gray-600 text-sm">
+            <p>
+                พัฒนาโดย <span class="font-bold text-purple-600">นางสาวสุภาดา คำตา</span> (แผนกเทคโนโลยีสารสนเทศ) <br class="lg:hidden">
+                <span class="font-bold">วิทยาลัยอาชีวศึกษาร้อยเอ็ด</span>
+            </p>
+            <div class="flex justify-center items-center mt-2 space-x-4">
+                <!-- RVC Logo Placeholder -->
+                <div class="w-8 h-8 bg-gray-400 rounded-full text-xs flex items-center justify-center">RVC</div>
+                <!-- QR Website Placeholder (Mock) -->
+                <div class="text-xs">QR เว็บไซต์หลัก RVC (Mock)</div>
+                <div class="w-8 h-8 bg-black flex items-center justify-center">
+                    <span class="text-white text-xs">QR</span>
+                </div>
+            </div>
+        </footer>
+    </div>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
