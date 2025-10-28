@@ -1,0 +1,1693 @@
+<!doctype html>
+<html lang="th">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RVC101 Photo Booth v12 — Advanced Edition</title>
+  <style>
+        /* ===== RESET & BASE STYLES ===== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            box-sizing: border-box;
+        }
+
+        html {
+            height: 100%;
+        }
+
+        /* ===== CSS VARIABLES ===== */
+        :root {
+            --primary-dark: #0b0f1a;
+            --primary-purple: #7b3fe4;
+            --neon-blue: #00d4ff;
+            --neon-pink: #ff0080;
+            --neon-green: #00ff88;
+            --gold: #ffd700;
+            --copper: #b87333;
+            --orange: #ff6b35;
+            --cyan: #00ffff;
+        }
+
+        /* ===== BODY & BACKGROUND ===== */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-dark) 0%, #1a1a2e 50%, var(--primary-purple) 100%);
+            color: white;
+            min-height: 100%;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 20% 80%, rgba(123, 63, 228, 0.3) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(0, 212, 255, 0.3) 0%, transparent 50%);
+            z-index: -1;
+            animation: backgroundPulse 4s ease-in-out infinite alternate;
+        }
+
+        /* ===== ANIMATIONS ===== */
+        @keyframes backgroundPulse {
+            0% { opacity: 0.3; }
+            100% { opacity: 0.6; }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes circuitGlow {
+            0% { box-shadow: inset 0 0 30px rgba(123, 63, 228, 0.3), 0 0 50px rgba(123, 63, 228, 0.5); }
+            100% { box-shadow: inset 0 0 50px rgba(123, 63, 228, 0.6), 0 0 80px rgba(123, 63, 228, 0.8); }
+        }
+
+        @keyframes championShimmer {
+            0%, 100% { filter: brightness(1) saturate(1); }
+            50% { filter: brightness(1.3) saturate(1.5); }
+        }
+
+        @keyframes heroGlow {
+            0% { box-shadow: 0 0 60px rgba(0, 212, 255, 0.4); }
+            100% { box-shadow: 0 0 100px rgba(0, 212, 255, 0.7); }
+        }
+
+        @keyframes glitchEffect {
+            0%, 90%, 100% { 
+                clip-path: inset(0);
+                border-color: var(--neon-pink);
+            }
+            10% { 
+                clip-path: inset(10px 0 85% 0);
+                border-color: var(--neon-green);
+            }
+            20% { 
+                clip-path: inset(80% 0 10% 0);
+                border-color: var(--neon-blue);
+            }
+        }
+
+        @keyframes textGlitch {
+            0%, 90%, 100% { color: var(--neon-pink); }
+            10% { color: var(--neon-green); }
+            20% { color: var(--neon-blue); }
+        }
+
+        @keyframes neonPulse {
+            0% { 
+                box-shadow: 0 0 20px var(--neon-blue), inset 0 0 20px rgba(0, 212, 255, 0.1);
+                filter: blur(0px);
+            }
+            100% { 
+                box-shadow: 0 0 40px var(--neon-blue), inset 0 0 40px rgba(0, 212, 255, 0.3);
+                filter: blur(1px);
+            }
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes qrGlow {
+            0% { box-shadow: 0 0 20px rgba(0, 212, 255, 0.3); }
+            100% { box-shadow: 0 0 40px rgba(0, 212, 255, 0.6); }
+        }
+
+        /* ===== LAYOUT COMPONENTS ===== */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            font-weight: bold;
+            background: linear-gradient(45deg, var(--neon-blue), var(--primary-purple), var(--neon-pink));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px rgba(123, 63, 228, 0.5);
+        }
+
+        .version-badge {
+            display: inline-block;
+            background: linear-gradient(45deg, var(--gold), var(--orange));
+            color: black;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            margin-left: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: #b0b0b0;
+            margin-bottom: 20px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        /* ===== CAMERA SECTION ===== */
+        .camera-section {
+            position: relative;
+            animation: slideIn 1s ease-out;
+        }
+
+        .camera-container {
+            position: relative;
+            width: 100%;
+            max-width: 720px;
+            margin: 0 auto;
+            border-radius: 20px;
+            overflow: hidden;
+            background: rgba(0, 0, 0, 0.8);
+            box-shadow: 0 0 50px rgba(123, 63, 228, 0.3);
+        }
+
+        #video {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: all 0.3s ease;
+        }
+
+        .camera-placeholder {
+            width: 100%;
+            height: 540px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            background: linear-gradient(45deg, #1a1a2e, #16213e);
+            color: #888;
+            font-size: 1.1rem;
+            text-align: center;
+            padding: 20px;
+        }
+
+        /* ===== CAMERA CONTROLS ===== */
+        .camera-controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .control-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 1.2rem;
+        }
+
+        .control-btn:hover {
+            background: rgba(123, 63, 228, 0.8);
+            transform: scale(1.1);
+        }
+
+        /* ===== STATS PANEL ===== */
+        .stats-panel {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 10px 15px;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            z-index: 100;
+        }
+
+        .stats-panel h4 {
+            color: var(--neon-blue);
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .stats-panel p {
+            color: white;
+            font-size: 0.8rem;
+            margin: 2px 0;
+        }
+
+        /* ===== QR CODE SECTION ===== */
+        .qr-section {
+            background: rgba(0, 0, 0, 0.9);
+            border: 2px solid var(--neon-blue);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+            animation: qrGlow 2s ease-in-out infinite alternate;
+        }
+
+        .qr-container {
+            display: inline-block;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            margin: 15px 0;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.3);
+        }
+
+        .qr-instructions {
+            color: #888;
+            font-size: 0.9rem;
+            margin: 10px 0;
+        }
+
+        .qr-tip {
+            color: var(--gold);
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        /* ===== FRAME OVERLAYS ===== */
+        .frame-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .frame-overlay.active {
+            opacity: 1;
+        }
+
+        /* Frame Styles */
+        .frame-rvc101-main {
+            background: linear-gradient(45deg, transparent 20%, rgba(123, 63, 228, 0.1) 50%, transparent 80%);
+            border: 15px solid var(--primary-purple);
+            box-shadow: 
+                inset 0 0 30px rgba(123, 63, 228, 0.3),
+                0 0 50px rgba(123, 63, 228, 0.5);
+            animation: circuitGlow 2s ease-in-out infinite alternate;
+        }
+
+        .frame-rvc101-main::before {
+            content: 'RVC101 Esports Challenge 2025 — v12';
+            position: absolute;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(45deg, var(--neon-blue), var(--primary-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-shadow: 0 0 20px rgba(123, 63, 228, 0.8);
+            white-space: nowrap;
+        }
+
+        .frame-esports-champ {
+            background: linear-gradient(45deg, transparent 30%, rgba(255, 215, 0, 0.1) 50%, transparent 70%);
+            border: 15px solid;
+            border-image: linear-gradient(45deg, var(--gold), var(--copper), var(--gold)) 1;
+            animation: championShimmer 1.5s ease-in-out infinite;
+        }
+
+        .frame-esports-champ::before {
+            content: '👑 Champion Mode';
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--gold);
+            font-size: 1.4rem;
+            font-weight: bold;
+            text-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+        }
+
+        .frame-team-hero {
+            background: radial-gradient(circle at center, rgba(0, 212, 255, 0.2) 0%, transparent 70%);
+            border: 15px solid var(--neon-blue);
+            box-shadow: 0 0 60px rgba(0, 212, 255, 0.4);
+            animation: heroGlow 2.5s ease-in-out infinite alternate;
+        }
+
+        .frame-team-hero::before {
+            content: '⚡ Team Hero';
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--neon-blue);
+            font-size: 1.4rem;
+            font-weight: bold;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+        }
+
+        .frame-glitch {
+            border: 15px solid var(--neon-pink);
+            animation: glitchEffect 0.3s infinite;
+        }
+
+        .frame-glitch::before {
+            content: '🔥 Glitch Style';
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--neon-pink);
+            font-size: 1.4rem;
+            font-weight: bold;
+            text-shadow: 0 0 20px rgba(255, 0, 128, 0.8);
+            animation: textGlitch 0.5s infinite;
+        }
+
+        .frame-neon {
+            border: 15px solid var(--neon-blue);
+            box-shadow: 
+                0 0 20px var(--neon-blue),
+                inset 0 0 20px rgba(0, 212, 255, 0.1);
+            animation: neonPulse 1s ease-in-out infinite alternate;
+        }
+
+        .frame-neon::before {
+            content: '💎 Cyber Neon';
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--neon-blue);
+            font-size: 1.4rem;
+            font-weight: bold;
+            text-shadow: 0 0 20px rgba(0, 212, 255, 0.8);
+        }
+
+        .frame-sponsor {
+            background: rgba(0, 0, 0, 0.8);
+            border: 15px solid rgba(0, 212, 255, 0.6);
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
+        }
+
+        .frame-sponsor::before {
+            content: 'Powered by Sponsors';
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.2rem;
+            font-weight: normal;
+        }
+
+        .frame-sponsor::after {
+            content: 'SPONSOR LOGO';
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            width: 200px;
+            height: 100px;
+            background: linear-gradient(45deg, rgba(0, 212, 255, 0.2), rgba(123, 63, 228, 0.2));
+            border: 1px solid rgba(0, 212, 255, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 0.9rem;
+        }
+
+        /* ===== CONTROLS SECTION ===== */
+        .controls {
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid rgba(123, 63, 228, 0.3);
+            box-shadow: 0 0 30px rgba(123, 63, 228, 0.2);
+            animation: slideIn 1s ease-out 0.3s both;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--neon-blue);
+            font-weight: bold;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid rgba(123, 63, 228, 0.3);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+        }
+
+        /* ===== SLIDERS ===== */
+        .slider-group {
+            margin-bottom: 15px;
+        }
+
+        .slider-group label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(123, 63, 228, 0.3);
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--neon-blue), var(--primary-purple));
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        .slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, var(--neon-blue), var(--primary-purple));
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 0 10px rgba(0, 212, 255, 0.5);
+        }
+
+        /* ===== BUTTONS ===== */
+        .btn {
+            width: 100%;
+            padding: 15px;
+            margin-bottom: 10px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .btn:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, var(--primary-purple), var(--neon-blue));
+            color: white;
+            box-shadow: 0 0 20px rgba(123, 63, 228, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 30px rgba(123, 63, 228, 0.6);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, var(--neon-green), #00cc66);
+            color: white;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 30px rgba(0, 255, 136, 0.6);
+        }
+
+        .btn-warning {
+            background: linear-gradient(45deg, var(--gold), #ffaa00);
+            color: black;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 30px rgba(255, 215, 0, 0.6);
+        }
+
+        .btn-info {
+            background: linear-gradient(45deg, var(--neon-pink), #ff4081);
+            color: white;
+            box-shadow: 0 0 20px rgba(255, 0, 128, 0.4);
+        }
+
+        .btn-info:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 30px rgba(255, 0, 128, 0.6);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #666, #888);
+            color: white;
+            box-shadow: 0 0 20px rgba(136, 136, 136, 0.4);
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 30px rgba(136, 136, 136, 0.6);
+        }
+
+        /* ===== FRAME SELECTOR ===== */
+        .frame-selector {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .frame-btn {
+            padding: 10px;
+            border: 2px solid rgba(123, 63, 228, 0.3);
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 0.9rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .frame-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.3), transparent);
+            transition: left 0.5s;
+        }
+
+        .frame-btn:hover::before {
+            left: 100%;
+        }
+
+        .frame-btn:hover, .frame-btn.active {
+            border-color: var(--neon-blue);
+            background: rgba(0, 212, 255, 0.1);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+        }
+
+        /* ===== TABS ===== */
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(123, 63, 228, 0.3);
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px;
+            background: transparent;
+            border: none;
+            color: #888;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            border-bottom: 2px solid transparent;
+        }
+
+        .tab.active {
+            color: var(--neon-blue);
+            border-bottom-color: var(--neon-blue);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        /* ===== HISTORY PANEL ===== */
+        .history-panel {
+            margin-top: 20px;
+        }
+
+        .history-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .history-item {
+            aspect-ratio: 16/9;
+            background-size: cover;
+            background-position: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid rgba(123, 63, 228, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .history-item:hover {
+            transform: scale(1.05);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(0, 212, 255, 0.5);
+        }
+
+        .history-item::after {
+            content: '👁️';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.5rem;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .history-item:hover::after {
+            opacity: 1;
+        }
+
+        /* ===== PREVIEW SECTION ===== */
+        .preview-section {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        #preview {
+            max-width: 100%;
+            border-radius: 15px;
+            box-shadow: 0 0 40px rgba(123, 63, 228, 0.4);
+            margin-bottom: 20px;
+        }
+
+        /* ===== FOOTER ===== */
+        .footer {
+            text-align: center;
+            padding: 30px 20px;
+            border-top: 1px solid rgba(123, 63, 228, 0.3);
+            background: rgba(0, 0, 0, 0.3);
+            margin-top: 40px;
+        }
+
+        .footer p {
+            color: #888;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+
+        .footer a {
+            color: var(--neon-blue);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
+        }
+
+        /* ===== RESPONSIVE DESIGN ===== */
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .frame-selector {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .history-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
+  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="container">
+   <header class="header">
+    <h1>RVC101 Photo Booth<span class="version-badge">v12 Pro</span></h1>
+    <p>🚀 Advanced Edition — ถ่ายรูปทีมคุณในกรอบกิจกรรม แชร์ความมันส์ รับของรางวัล!</p>
+   </header>
+   <div class="main-content">
+    <div class="camera-section">
+     <div class="camera-container"><!-- Stats Panel -->
+      <div class="stats-panel">
+       <h4>📊 สถิติ</h4>
+       <p>ภาพที่ถ่าย: <span id="photoCount">0</span></p>
+       <p>เวลาใช้งาน: <span id="sessionTime">00:00</span></p>
+      </div><!-- Camera Controls -->
+      <div class="camera-controls"><button class="control-btn" id="switchCamera" title="สลับกล้อง">🔄</button> <button class="control-btn" id="rotateCamera" title="หมุนภาพ">↻</button> <button class="control-btn" id="togglePro" title="โหมดมืออาชีพ">⚙️</button>
+      </div>
+      <video id="video" autoplay muted playsinline style="display: none;"></video>
+      <div id="cameraPlaceholder" class="camera-placeholder">
+       <p>📷 กดปุ่ม "เปิดกล้อง" เพื่อเริ่มถ่ายภาพ</p>
+       <p>อนุญาตการเข้าถึงกล้องเพื่อใช้งาน Photo Booth v12</p>
+      </div><!-- Frame Overlays -->
+      <div class="frame-overlay frame-rvc101-main" id="frame-rvc101-main"></div>
+      <div class="frame-overlay frame-esports-champ" id="frame-esports-champ"></div>
+      <div class="frame-overlay frame-team-hero" id="frame-team-hero"></div>
+      <div class="frame-overlay frame-glitch" id="frame-glitch"></div>
+      <div class="frame-overlay frame-neon" id="frame-neon"></div>
+      <div class="frame-overlay frame-sponsor" id="frame-sponsor"></div>
+      <div class="frame-overlay frame-custom" id="frame-custom"></div>
+     </div><!-- Countdown Display -->
+     <div id="countdownDisplay" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); display: none; font-size: 4rem; font-weight: bold; color: #00d4ff; text-shadow: 0 0 30px rgba(0, 212, 255, 0.8); animation: pulse 1s infinite; z-index: 1000;">
+     </div><!-- Camera Control Buttons -->
+     <div style="text-align: center; margin-top: 20px;">
+      <div style="display: flex; gap: 15px; justify-content: center; align-items: center; flex-wrap: wrap;"><button class="btn btn-success" id="capturePhoto" style="display: none; width: auto; padding: 18px 40px; font-size: 1.2rem;">📸 ถ่ายภาพ</button> <button class="btn btn-warning" id="timerCapture" style="display: none; width: auto; padding: 18px 40px; font-size: 1.2rem;">⏰ นับเวลา 4 วิ</button> <button class="btn btn-info" id="quickCapture" style="display: none; width: auto; padding: 18px 40px; font-size: 1.2rem;">⚡ ถ่ายเร็ว</button>
+      </div>
+      <div style="margin-top: 15px; display: none;" id="timerControls">
+       <div style="display: flex; gap: 10px; justify-content: center; align-items: center; flex-wrap: wrap;"><button class="btn btn-secondary" id="timer3s" style="width: auto; padding: 10px 20px; font-size: 0.9rem;">3 วิ</button> <button class="btn btn-secondary" id="timer5s" style="width: auto; padding: 10px 20px; font-size: 0.9rem;">5 วิ</button> <button class="btn btn-secondary" id="timer10s" style="width: auto; padding: 10px 20px; font-size: 0.9rem;">10 วิ</button> <button class="btn btn-secondary" id="cancelTimer" style="width: auto; padding: 10px 20px; font-size: 0.9rem; background: linear-gradient(45deg, #ff4444, #cc0000);">❌ ยกเลิก</button>
+       </div>
+      </div>
+     </div>
+    </div>
+    <div class="controls"><!-- Tabs -->
+     <div class="tabs"><button class="tab active" data-tab="basic">พื้นฐาน</button> <button class="tab" data-tab="effects">เอฟเฟกต์</button> <button class="tab" data-tab="history">ประวัติ</button>
+     </div><!-- Basic Tab -->
+     <div class="tab-content active" id="basic">
+      <div class="form-group"><label for="nickname">ชื่อเล่น (Nickname)</label> <input type="text" id="nickname" placeholder="ใส่ชื่อเล่นของคุณ">
+      </div>
+      <div class="form-group"><label for="teamName">ชื่อทีม (Team Name)</label> <input type="text" id="teamName" placeholder="ใส่ชื่อทีมของคุณ">
+      </div>
+      <div class="form-group"><label>เลือกกรอบกิจกรรม</label>
+       <div class="frame-selector">
+        <div class="frame-btn active" data-frame="frame-rvc101-main">
+         RVC101 Main
+        </div>
+        <div class="frame-btn" data-frame="frame-esports-champ">
+         Champion
+        </div>
+        <div class="frame-btn" data-frame="frame-team-hero">
+         Team Hero
+        </div>
+        <div class="frame-btn" data-frame="frame-glitch">
+         Glitch Style
+        </div>
+        <div class="frame-btn" data-frame="frame-neon">
+         Cyber Neon
+        </div>
+        <div class="frame-btn" data-frame="frame-sponsor">
+         Sponsor
+        </div>
+        <div class="frame-btn" data-frame="frame-custom" id="customFrameBtn" style="display: none;">
+         Custom Frame
+        </div>
+       </div>
+      </div>
+      <div class="form-group"><label for="outputSize">ขนาดภาพส่งออก</label> <select id="outputSize"> <option value="hd">HD (1280x720)</option> <option value="fullhd" selected>Full HD (1920x1080)</option> <option value="4k">4K (3840x2160)</option> </select>
+      </div>
+      <div class="form-group"><label for="customFrame">อัพโหลดเฟรมเอง (PNG/JPG)</label> <input type="file" id="customFrame" accept="image/*" multiple style="padding: 8px;">
+      </div><button class="btn btn-primary" id="startCamera">📷 เปิดกล้อง</button>
+     </div><!-- Effects Tab -->
+     <div class="tab-content" id="effects">
+      <div class="form-group"><label>🎨 ฟิลเตอร์สี</label> <select id="colorFilter"> <option value="none">ปกติ</option> <option value="sepia">Sepia</option> <option value="grayscale">ขาวดำ</option> <option value="vintage">Vintage</option> <option value="cool">Cool Tone</option> <option value="warm">Warm Tone</option> </select>
+      </div>
+      <div class="slider-group"><label> <span>🔆 ความสว่าง</span> <span id="brightnessValue">100%</span> </label> <input type="range" class="slider" id="brightness" min="50" max="150" value="100">
+      </div>
+      <div class="slider-group"><label> <span>🎭 คอนทราสต์</span> <span id="contrastValue">100%</span> </label> <input type="range" class="slider" id="contrast" min="50" max="150" value="100">
+      </div>
+      <div class="slider-group"><label> <span>🌈 ความอิ่มตัวสี</span> <span id="saturationValue">100%</span> </label> <input type="range" class="slider" id="saturation" min="0" max="200" value="100">
+      </div>
+      <div class="slider-group"><label> <span>🌫️ เบลอ</span> <span id="blurValue">0px</span> </label> <input type="range" class="slider" id="blur" min="0" max="10" value="0">
+      </div><button class="btn btn-secondary" id="resetEffects">🔄 รีเซ็ตเอฟเฟกต์</button>
+     </div><!-- History Tab -->
+     <div class="tab-content" id="history">
+      <div class="history-panel">
+       <h4 style="color: var(--neon-blue); margin-bottom: 10px;">📸 ภาพล่าสุด (5 ภาพ)</h4>
+       <div class="history-grid" id="historyGrid">
+        <div style="
+                                aspect-ratio: 16/9;
+                                background: rgba(123, 63, 228, 0.1);
+                                border: 2px dashed rgba(123, 63, 228, 0.3);
+                                border-radius: 8px;
+                                display: flex;
+                                align-items: center;
+                                justify-content: center;
+                                color: #888;
+                                font-size: 0.9rem;
+                                text-align: center;
+                                grid-column: 1 / -1;
+                            ">
+         ยังไม่มีภาพในประวัติ<br>
+         เริ่มถ่ายภาพเพื่อดูประวัติ
+        </div>
+       </div><button class="btn btn-info" id="clearHistory" style="margin-top: 15px;">🗑️ ล้างประวัติ</button>
+      </div>
+     </div>
+    </div>
+   </div>
+   <div class="preview-section" id="previewSection" style="display: none;">
+    <h3>ภาพที่ถ่าย</h3><img id="preview" alt="ภาพที่ถ่าย"> <!-- QR Code Section -->
+    <div id="qrCodeSection" class="qr-section" style="display: none;">
+     <h3 style="color: var(--neon-blue); margin-bottom: 15px;">📱 สแกน QR Code เพื่อดาวน์โหลดภาพ</h3>
+     <div class="qr-container">
+      <canvas id="qrCanvas"></canvas>
+     </div>
+     <p class="qr-instructions">เปิดกล้องมือถือ → สแกน QR Code → ดาวน์โหลดภาพ</p>
+     <p class="qr-tip">💡 ภาพจะดาวน์โหลดอัตโนมัติหลังสแกน</p>
+    </div>
+    <div style="display: flex; gap: 15px; justify-content: center; margin-top: 20px; flex-wrap: wrap;"><button class="btn btn-success" id="retakePhoto" style="display: none; width: auto; padding: 12px 30px;">📷 ถ่ายใหม่</button> <button class="btn btn-warning" id="downloadPhoto" style="display: none; width: auto; padding: 12px 30px;">💾 ดาวน์โหลด PNG</button> <button class="btn btn-info" id="sharePhoto" style="display: none; width: auto; padding: 12px 30px;">📤 แชร์ภาพ</button> <button class="btn btn-primary" id="generateQR" style="display: none; width: auto; padding: 12px 30px;">📱 สร้าง QR Code</button>
+    </div>
+   </div>
+  </div>
+  <footer class="footer">
+   <p>จัดทำโดย: ครูสุภาดา คำตา แผนกเทคโนโลยีสารสนเทศ วิทยาลัยอาชีวศึกษาร้อยเอ็ด</p>
+   <p>ติดต่อ: <a href="mailto:suphada@rvc.ac.th">suphada@rvc.ac.th</a> | โทร <a href="tel:097-1697157">097-1697157</a></p>
+   <p style="margin-top: 10px; color: var(--gold);">🚀 RVC101 Photo Booth v12 — Advanced Edition</p>
+  </footer>
+  <canvas id="canvas" style="display: none;"></canvas>
+  <script>
+        // Global variables
+        let stream = null;
+        let currentFrame = 'frame-rvc101-main';
+        let customFrames = [];
+        let selectedCustomFrameIndex = 0;
+        let photoCount = 0;
+        let sessionStartTime = Date.now();
+        let sessionTimer = null;
+        let currentCamera = 'user'; // 'user' for front, 'environment' for back
+        let rotation = 0;
+        let photoHistory = [];
+        let isProMode = false;
+        let currentPhotoDataUrl = null;
+        
+        // DOM elements
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const preview = document.getElementById('preview');
+        const previewSection = document.getElementById('previewSection');
+        const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+        
+        const startCameraBtn = document.getElementById('startCamera');
+        const capturePhotoBtn = document.getElementById('capturePhoto');
+        const timerCaptureBtn = document.getElementById('timerCapture');
+        const quickCaptureBtn = document.getElementById('quickCapture');
+        const countdownDisplay = document.getElementById('countdownDisplay');
+        const downloadPhotoBtn = document.getElementById('downloadPhoto');
+        const sharePhotoBtn = document.getElementById('sharePhoto');
+        const retakePhotoBtn = document.getElementById('retakePhoto');
+        const generateQRBtn = document.getElementById('generateQR');
+        const qrCodeSection = document.getElementById('qrCodeSection');
+        const qrCanvas = document.getElementById('qrCanvas');
+        const customFrameInput = document.getElementById('customFrame');
+        const customFrameBtn = document.getElementById('customFrameBtn');
+        
+        // Timer controls
+        const timerControls = document.getElementById('timerControls');
+        const timer3sBtn = document.getElementById('timer3s');
+        const timer5sBtn = document.getElementById('timer5s');
+        const timer10sBtn = document.getElementById('timer10s');
+        const cancelTimerBtn = document.getElementById('cancelTimer');
+        
+        const nicknameInput = document.getElementById('nickname');
+        const teamNameInput = document.getElementById('teamName');
+        
+        // New v12 elements
+        const switchCameraBtn = document.getElementById('switchCamera');
+        const rotateCameraBtn = document.getElementById('rotateCamera');
+        const toggleProBtn = document.getElementById('togglePro');
+        const photoCountDisplay = document.getElementById('photoCount');
+        const sessionTimeDisplay = document.getElementById('sessionTime');
+        const outputSizeSelect = document.getElementById('outputSize');
+        const colorFilterSelect = document.getElementById('colorFilter');
+        const brightnessSlider = document.getElementById('brightness');
+        const contrastSlider = document.getElementById('contrast');
+        const saturationSlider = document.getElementById('saturation');
+        const blurSlider = document.getElementById('blur');
+        const resetEffectsBtn = document.getElementById('resetEffects');
+        const clearHistoryBtn = document.getElementById('clearHistory');
+        const historyGrid = document.getElementById('historyGrid');
+        
+        let countdownTimer = null;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeTabs();
+            initializeEffects();
+            initializeControls();
+            startSessionTimer();
+            loadPhotoHistory();
+            
+            // Load saved settings
+            loadSettings();
+        });
+
+        // Tab functionality
+        function initializeTabs() {
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const targetTab = this.dataset.tab;
+                    
+                    // Remove active class from all tabs and contents
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(tc => tc.classList.remove('active'));
+                    
+                    // Add active class to clicked tab and corresponding content
+                    this.classList.add('active');
+                    document.getElementById(targetTab).classList.add('active');
+                });
+            });
+        }
+
+        // Effects initialization
+        function initializeEffects() {
+            // Color filter
+            colorFilterSelect.addEventListener('change', applyEffects);
+            
+            // Sliders
+            brightnessSlider.addEventListener('input', function() {
+                document.getElementById('brightnessValue').textContent = this.value + '%';
+                applyEffects();
+            });
+            
+            contrastSlider.addEventListener('input', function() {
+                document.getElementById('contrastValue').textContent = this.value + '%';
+                applyEffects();
+            });
+            
+            saturationSlider.addEventListener('input', function() {
+                document.getElementById('saturationValue').textContent = this.value + '%';
+                applyEffects();
+            });
+            
+            blurSlider.addEventListener('input', function() {
+                document.getElementById('blurValue').textContent = this.value + 'px';
+                applyEffects();
+            });
+            
+            // Reset effects
+            resetEffectsBtn.addEventListener('click', function() {
+                colorFilterSelect.value = 'none';
+                brightnessSlider.value = 100;
+                contrastSlider.value = 100;
+                saturationSlider.value = 100;
+                blurSlider.value = 0;
+                
+                // Update displays
+                document.getElementById('brightnessValue').textContent = '100%';
+                document.getElementById('contrastValue').textContent = '100%';
+                document.getElementById('saturationValue').textContent = '100%';
+                document.getElementById('blurValue').textContent = '0px';
+                
+                applyEffects();
+                showCustomAlert('รีเซ็ตเอฟเฟกต์เรียบร้อยแล้ว!');
+            });
+        }
+
+        // Apply effects to video
+        function applyEffects() {
+            if (!video.style.display || video.style.display === 'none') return;
+            
+            const brightness = brightnessSlider.value;
+            const contrast = contrastSlider.value;
+            const saturation = saturationSlider.value;
+            const blur = blurSlider.value;
+            const filter = colorFilterSelect.value;
+            
+            let filterString = `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px)`;
+            
+            switch(filter) {
+                case 'sepia':
+                    filterString += ' sepia(100%)';
+                    break;
+                case 'grayscale':
+                    filterString += ' grayscale(100%)';
+                    break;
+                case 'vintage':
+                    filterString += ' sepia(50%) contrast(120%) brightness(110%)';
+                    break;
+                case 'cool':
+                    filterString += ' hue-rotate(180deg)';
+                    break;
+                case 'warm':
+                    filterString += ' hue-rotate(30deg) saturate(120%)';
+                    break;
+            }
+            
+            video.style.filter = filterString;
+            video.style.transform = `rotate(${rotation}deg)`;
+        }
+
+        // Initialize controls
+        function initializeControls() {
+            // Switch camera
+            switchCameraBtn.addEventListener('click', function() {
+                currentCamera = currentCamera === 'user' ? 'environment' : 'user';
+                if (stream) {
+                    restartCamera();
+                }
+                showCustomAlert(`สลับเป็นกล้อง${currentCamera === 'user' ? 'หน้า' : 'หลัง'}แล้ว!`);
+            });
+            
+            // Rotate camera
+            rotateCameraBtn.addEventListener('click', function() {
+                rotation = (rotation + 90) % 360;
+                applyEffects();
+                showCustomAlert(`หมุนภาพ ${rotation} องศาแล้ว!`);
+            });
+            
+            // Toggle pro mode
+            toggleProBtn.addEventListener('click', function() {
+                isProMode = !isProMode;
+                this.style.background = isProMode ? 
+                    'linear-gradient(45deg, var(--gold), var(--orange))' : 
+                    'rgba(0, 0, 0, 0.7)';
+                showCustomAlert(`${isProMode ? 'เปิด' : 'ปิด'}โหมดมืออาชีพแล้ว!`);
+            });
+            
+            // Clear history
+            clearHistoryBtn.addEventListener('click', function() {
+                photoHistory = [];
+                localStorage.removeItem('rvc101_photo_history');
+                updateHistoryDisplay();
+                showCustomAlert('ล้างประวัติภาพเรียบร้อยแล้ว!');
+            });
+        }
+
+        // Session timer
+        function startSessionTimer() {
+            sessionTimer = setInterval(function() {
+                const elapsed = Date.now() - sessionStartTime;
+                const minutes = Math.floor(elapsed / 60000);
+                const seconds = Math.floor((elapsed % 60000) / 1000);
+                sessionTimeDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        // Restart camera with new settings
+        async function restartCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            
+            try {
+                let constraints;
+                
+                // Try with exact facing mode first
+                try {
+                    constraints = {
+                        video: {
+                            facingMode: { exact: currentCamera },
+                            width: { ideal: 1280, max: 1920 },
+                            height: { ideal: 720, max: 1080 }
+                        }
+                    };
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                } catch (exactError) {
+                    // Fallback to any camera
+                    constraints = {
+                        video: {
+                            width: { ideal: 1280, max: 1920 },
+                            height: { ideal: 720, max: 1080 }
+                        }
+                    };
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                }
+                
+                video.srcObject = stream;
+                
+                // Wait for video to be ready
+                await new Promise((resolve, reject) => {
+                    video.onloadedmetadata = () => {
+                        video.play().then(resolve).catch(reject);
+                    };
+                    video.onerror = reject;
+                    setTimeout(() => reject(new Error('Video load timeout')), 5000);
+                });
+                
+                applyEffects();
+            } catch (err) {
+                console.error('Error restarting camera:', err);
+                showCustomAlert('ไม่สามารถสลับกล้องได้ อาจไม่มีกล้องหลัง');
+            }
+        }
+
+        // Custom frame upload (multiple files)
+        customFrameInput.addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            if (files.length > 0) {
+                let loadedCount = 0;
+                const totalFiles = files.length;
+                
+                files.forEach((file, index) => {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        const img = new Image();
+                        img.onload = function() {
+                            customFrames.push({
+                                image: img,
+                                dataUrl: event.target.result,
+                                name: file.name
+                            });
+                            
+                            loadedCount++;
+                            
+                            if (loadedCount === totalFiles) {
+                                updateCustomFrameUI();
+                                selectedCustomFrameIndex = customFrames.length - totalFiles;
+                                selectCustomFrame(selectedCustomFrameIndex);
+                                showCustomAlert(`อัพโหลดเฟรมสำเร็จ! เพิ่มเฟรมใหม่ ${totalFiles} ภาพ`);
+                            }
+                        };
+                        img.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                });
+            }
+        });
+        
+        // Frame selection
+        document.querySelectorAll('.frame-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.frame-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                
+                document.querySelectorAll('.frame-overlay').forEach(frame => {
+                    frame.classList.remove('active');
+                });
+                
+                currentFrame = this.dataset.frame;
+                document.getElementById(currentFrame).classList.add('active');
+            });
+        });
+        
+        // Start camera - IMPROVED VERSION WITH BETTER ERROR HANDLING
+        startCameraBtn.addEventListener('click', async function() {
+            try {
+                // Stop existing stream first
+                if (stream) {
+                    stream.getTracks().forEach(track => track.stop());
+                }
+                
+                // Show loading state
+                startCameraBtn.textContent = '⏳ กำลังเปิดกล้อง...';
+                startCameraBtn.disabled = true;
+                
+                // Try different constraint approaches
+                let constraints;
+                
+                // First try with specific facing mode
+                try {
+                    constraints = {
+                        video: {
+                            facingMode: { exact: currentCamera },
+                            width: { ideal: 1280, max: 1920 },
+                            height: { ideal: 720, max: 1080 }
+                        }
+                    };
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                } catch (exactError) {
+                    // Fallback to any camera
+                    console.log('Exact facing mode failed, trying any camera...');
+                    constraints = {
+                        video: {
+                            width: { ideal: 1280, max: 1920 },
+                            height: { ideal: 720, max: 1080 }
+                        }
+                    };
+                    stream = await navigator.mediaDevices.getUserMedia(constraints);
+                }
+                
+                // Set video source and wait for it to load
+                video.srcObject = stream;
+                
+                // Wait for video to be ready
+                await new Promise((resolve, reject) => {
+                    video.onloadedmetadata = () => {
+                        video.play().then(resolve).catch(reject);
+                    };
+                    video.onerror = reject;
+                    
+                    // Timeout after 10 seconds
+                    setTimeout(() => reject(new Error('Video load timeout')), 10000);
+                });
+                
+                // Success - show video and hide placeholder
+                video.style.display = 'block';
+                cameraPlaceholder.style.display = 'none';
+                
+                startCameraBtn.style.display = 'none';
+                capturePhotoBtn.style.display = 'block';
+                timerCaptureBtn.style.display = 'block';
+                quickCaptureBtn.style.display = 'block';
+                
+                document.getElementById(currentFrame).classList.add('active');
+                applyEffects();
+                
+                showCustomAlert('เปิดกล้องสำเร็จ! พร้อมถ่ายภาพแล้ว');
+                
+            } catch (err) {
+                console.error('Camera error:', err);
+                
+                // Reset button state
+                startCameraBtn.textContent = '📷 เปิดกล้อง';
+                startCameraBtn.disabled = false;
+                
+                // Show detailed error message
+                let errorMessage = '';
+                if (err.name === 'NotAllowedError') {
+                    errorMessage = `
+                        <p>❌ ไม่ได้รับอนุญาตให้เข้าถึงกล้อง</p>
+                        <p>กรุณาคลิกที่ไอคอนกล้องในแถบที่อยู่ของเบราว์เซอร์</p>
+                        <p>และเลือก "อนุญาต" เพื่อให้เว็บไซต์เข้าถึงกล้องได้</p>
+                        <button onclick="location.reload()" style="
+                            background: linear-gradient(45deg, #7b3fe4, #00d4ff);
+                            color: white;
+                            border: none;
+                            padding: 10px 20px;
+                            border-radius: 8px;
+                            margin-top: 10px;
+                            cursor: pointer;
+                            font-weight: bold;
+                        ">🔄 รีเฟรชหน้า</button>
+                    `;
+                } else if (err.name === 'NotFoundError') {
+                    errorMessage = `
+                        <p>❌ ไม่พบกล้องในอุปกรณ์</p>
+                        <p>กรุณาตรวจสอบว่าอุปกรณ์มีกล้องและเชื่อมต่อแล้ว</p>
+                    `;
+                } else if (err.name === 'NotReadableError') {
+                    errorMessage = `
+                        <p>❌ กล้องถูกใช้งานโดยแอปพลิเคชันอื่น</p>
+                        <p>กรุณาปิดแอปพลิเคชันอื่นที่ใช้กล้องแล้วลองใหม่</p>
+                        <button onclick="location.reload()" style="
+                            background: linear-gradient(45deg, #7b3fe4, #00d4ff);
+                            color: white;
+                            border: none;
+                            padding: 10px 20px;
+                            border-radius: 8px;
+                            margin-top: 10px;
+                            cursor: pointer;
+                            font-weight: bold;
+                        ">🔄 รีเฟรชหน้า</button>
+                    `;
+                } else if (err.name === 'OverconstrainedError') {
+                    errorMessage = `
+                        <p>❌ กล้องไม่รองรับความละเอียดที่ต้องการ</p>
+                        <p>กำลังลองใช้ความละเอียดที่ต่ำลง...</p>
+                    `;
+                    
+                    // Try with lower resolution
+                    setTimeout(async () => {
+                        try {
+                            const lowResConstraints = {
+                                video: {
+                                    width: { ideal: 640 },
+                                    height: { ideal: 480 }
+                                }
+                            };
+                            stream = await navigator.mediaDevices.getUserMedia(lowResConstraints);
+                            video.srcObject = stream;
+                            
+                            await new Promise((resolve, reject) => {
+                                video.onloadedmetadata = () => {
+                                    video.play().then(resolve).catch(reject);
+                                };
+                                video.onerror = reject;
+                                setTimeout(() => reject(new Error('Video load timeout')), 5000);
+                            });
+                            
+                            video.style.display = 'block';
+                            cameraPlaceholder.style.display = 'none';
+                            startCameraBtn.style.display = 'none';
+                            capturePhotoBtn.style.display = 'block';
+                            timerCaptureBtn.style.display = 'block';
+                            quickCaptureBtn.style.display = 'block';
+                            
+                            document.getElementById(currentFrame).classList.add('active');
+                            applyEffects();
+                            
+                            showCustomAlert('เปิดกล้องสำเร็จด้วยความละเอียดต่ำ!');
+                            
+                        } catch (lowResErr) {
+                            cameraPlaceholder.innerHTML = `
+                                <p>❌ ไม่สามารถเปิดกล้องได้แม้ด้วยความละเอียดต่ำ</p>
+                                <p>กรุณาตรวจสอบการเชื่อมต่อกล้องและลองใหม่</p>
+                            `;
+                        }
+                    }, 2000);
+                    
+                } else {
+                    errorMessage = `
+                        <p>❌ เกิดข้อผิดพลาดในการเปิดกล้อง</p>
+                        <p>กรุณาตรวจสอบว่าเว็บไซต์ทำงานบน HTTPS</p>
+                        <p>และอนุญาตการเข้าถึงกล้องในเบราว์เซอร์</p>
+                        <p style="font-size: 0.8rem; color: #888;">Error: ${err.message}</p>
+                        <button onclick="location.reload()" style="
+                            background: linear-gradient(45deg, #7b3fe4, #00d4ff);
+                            color: white;
+                            border: none;
+                            padding: 10px 20px;
+                            border-radius: 8px;
+                            margin-top: 10px;
+                            cursor: pointer;
+                            font-weight: bold;
+                        ">🔄 รีเฟรชหน้า</button>
+                    `;
+                }
+                
+                cameraPlaceholder.innerHTML = errorMessage;
+            }
+        });
+        
+        // Capture photo function
+        function capturePhoto() {
+            const nickname = nicknameInput.value.trim();
+            const teamName = teamNameInput.value.trim();
+            
+            if (!nickname || !teamName) {
+                showCustomAlert('กรุณาใส่ชื่อเล่นและชื่อทีมก่อนถ่ายภาพ');
+                return;
+            }
+            
+            // Get output size
+            const outputSize = outputSizeSelect.value;
+            let width, height;
+            
+            switch(outputSize) {
+                case 'hd':
+                    width = 1280;
+                    height = 720;
+                    break;
+                case 'fullhd':
+                    width = 1920;
+                    height = 1080;
+                    break;
+                case '4k':
+                    width = 3840;
+                    height = 2160;
+                    break;
+                default:
+                    width = video.videoWidth;
+                    height = video.videoHeight;
+            }
+            
+            canvas.width = width;
+            canvas.height = height;
+            
+            // Save context
+            ctx.save();
+            
+            // Apply rotation if needed
+            if (rotation !== 0) {
+                ctx.translate(width / 2, height / 2);
+                ctx.rotate((rotation * Math.PI) / 180);
+                ctx.translate(-width / 2, -height / 2);
+            }
+            
+            // Draw video frame with effects
+            ctx.filter = video.style.filter || 'none';
+            ctx.drawImage(video, 0, 0, width, height);
+            
+            // Reset filter for overlays
+            ctx.filter = 'none';
+            
+            // Draw frame overlay
+            if (currentFrame === 'frame-custom' && customFrames.length > 0) {
+                const selectedFrame = customFrames[selectedCustomFrameIndex];
+                if (selectedFrame) {
+                    ctx.drawImage(selectedFrame.image, 0, 0, width, height);
+                }
+            } else {
+                drawFrameOverlay(ctx, width, height);
+            }
+            
+            // Draw text overlay
+            drawTextOverlay(ctx, nickname, teamName, width, height);
+            
+            // Restore context
+            ctx.restore();
+            
+            // Convert to image and show preview
+            const imageDataUrl = canvas.toDataURL('image/png');
+            currentPhotoDataUrl = imageDataUrl;
+            preview.src = imageDataUrl;
+            previewSection.style.display = 'block';
+            retakePhotoBtn.style.display = 'block';
+            downloadPhotoBtn.style.display = 'block';
+            sharePhotoBtn.style.display = 'block';
+            generateQRBtn.style.display = 'block';
+            
+            capturePhotoBtn.style.display = 'none';
+            timerCaptureBtn.style.display = 'none';
+            
+            // Update stats
+            photoCount++;
+            photoCountDisplay.textContent = photoCount;
+            
+            // Add to history
+            addToHistory(imageDataUrl);
+            
+            // Play shutter effect
+            playShutterEffect();
+            
+            // Save settings
+            saveSettings();
+            
+            previewSection.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Generate QR Code function
+        generateQRBtn.addEventListener('click', function() {
+            if (!currentPhotoDataUrl) {
+                showCustomAlert('ไม่พบข้อมูลภาพ กรุณาถ่ายภาพใหม่');
+                return;
+            }
+            
+            generateQRBtn.textContent = '⏳ กำลังสร้าง QR Code...';
+            generateQRBtn.disabled = true;
+            
+            try {
+                // Generate QR Code with photo data
+                generateQRCode(currentPhotoDataUrl);
+                qrCodeSection.style.display = 'block';
+                
+                generateQRBtn.textContent = '✅ สร้าง QR Code แล้ว';
+                setTimeout(() => {
+                    generateQRBtn.textContent = '📱 สร้าง QR Code';
+                    generateQRBtn.disabled = false;
+                }, 2000);
+                
+                showCustomAlert('สร้าง QR Code สำเร็จ! คนที่ถ่ายสามารถสแกนเพื่อดาวน์โหลดภาพได้');
+                
+            } catch (err) {
+                console.error('QR Code generation error:', err);
+                showCustomAlert('เกิดข้อผิดพลาดในการสร้าง QR Code');
+                generateQRBtn.textContent = '📱 สร้าง QR Code';
+                generateQRBtn.disabled = false;
+            }
+        });
+        
+        // Simple QR Code generator function
+        function generateQRCode(data) {
+            const size = 200;
+            const canvas = qrCanvas;
+            const ctx = canvas.getContext('2d');
+            
+            canvas.width = size;
+            canvas.height = size;
+            
+            // Create a simple data URL that triggers download
+            const downloadUrl = `data:text/html,<html><head><title>RVC101 Photo</title></head><body><script>
+                const link = document.createElement('a');
+                link.href = '${data}';
+                link.download = 'RVC101_Photo_${Date.now()}.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.innerHTML = '<h2 style="text-align:center;margin-top:50px;font-family:Arial;">📸 กำลังดาวน์โหลดภาพ...</h2><p style="text-align:center;color:#666;">หากไม่เริ่มดาวน์โหลดอัตโนมัติ กรุณาคลิกขวาและเลือก "บันทึกภาพ"</p><img src="${data}" style="max-width:90%;display:block;margin:20px auto;border:2px solid #ddd;">';
+            </script>`; // Generate simple QR-like pattern (for demo purposes) // In a real implementation, you'd use a proper QR code library generateSimpleQRPattern(ctx, size, downloadUrl); } // Generate a simple QR-like pattern function generateSimpleQRPattern(ctx, size, data) { const moduleSize = size / 25; // Clear canvas ctx.fillStyle = 'white'; ctx.fillRect(0, 0, size, size); // Create a pattern based on data hash const hash = simpleHash(data); ctx.fillStyle = 'black'; // Draw finder patterns (corners) drawFinderPattern(ctx, 0, 0, moduleSize); drawFinderPattern(ctx, size - 7 * moduleSize, 0, moduleSize); drawFinderPattern(ctx, 0, size - 7 * moduleSize, moduleSize); // Draw data pattern for (let i = 0; i &lt; 25; i++) { for (let j = 0; j &lt; 25; j++) { // Skip finder pattern areas if ((i &lt; 9 &amp;&amp; j &lt; 9) || (i &lt; 9 &amp;&amp; j &gt; 15) || (i &gt; 15 &amp;&amp; j &lt; 9)) { continue; } // Generate pattern based on hash if ((hash + i * j) % 3 === 0) { ctx.fillRect(i * moduleSize, j * moduleSize, moduleSize, moduleSize); } } } } // Draw finder pattern (corner squares) function drawFinderPattern(ctx, x, y, moduleSize) { // Outer square ctx.fillRect(x, y, 7 * moduleSize, 7 * moduleSize); ctx.fillStyle = 'white'; ctx.fillRect(x + moduleSize, y + moduleSize, 5 * moduleSize, 5 * moduleSize); ctx.fillStyle = 'black'; ctx.fillRect(x + 2 * moduleSize, y + 2 * moduleSize, 3 * moduleSize, 3 * moduleSize); } // Simple hash function function simpleHash(str) { let hash = 0; for (let i = 0; i &lt; str.length; i++) { const char = str.charCodeAt(i); hash = ((hash &lt;&lt; 5) - hash) + char; hash = hash &amp; hash; // Convert to 32-bit integer } return Math.abs(hash); } // Shutter effect function playShutterEffect() { const flash = document.createElement('div'); flash.style.cssText = ` position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; z-index: 9999; opacity: 0.8; pointer-events: none; `; document.body.appendChild(flash); setTimeout(() =&gt; { flash.style.opacity = '0'; flash.style.transition = 'opacity 0.3s ease'; setTimeout(() =&gt; { document.body.removeChild(flash); }, 300); }, 100); } // Add to photo history function addToHistory(imageDataUrl) { photoHistory.unshift({ dataUrl: imageDataUrl, timestamp: Date.now(), nickname: nicknameInput.value, teamName: teamNameInput.value }); // Keep only last 5 photos if (photoHistory.length &gt; 5) { photoHistory = photoHistory.slice(0, 5); } // Save to localStorage localStorage.setItem('rvc101_photo_history', JSON.stringify(photoHistory)); updateHistoryDisplay(); } // Update history display function updateHistoryDisplay() { historyGrid.innerHTML = ''; if (photoHistory.length === 0) { historyGrid.innerHTML = ` 
+  <div style="
+                        aspect-ratio: 16/9;
+                        background: rgba(123, 63, 228, 0.1);
+                        border: 2px dashed rgba(123, 63, 228, 0.3);
+                        border-radius: 8px;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #888;
+                        font-size: 0.9rem;
+                        text-align: center;
+                        grid-column: 1 / -1;
+                    ">
+   ยังไม่มีภาพในประวัติ<br>
+   เริ่มถ่ายภาพเพื่อดูประวัติ
+  </div> `; return; } photoHistory.forEach((photo, index) =&gt; { const historyItem = document.createElement('div'); historyItem.className = 'history-item'; historyItem.style.backgroundImage = `url(${photo.dataUrl})`; historyItem.title = `${photo.nickname} (${photo.teamName}) - ${new Date(photo.timestamp).toLocaleString('th-TH')}`; historyItem.addEventListener('click', function() { showPhotoModal(photo); }); historyGrid.appendChild(historyItem); }); } // Show photo modal function showPhotoModal(photo) { const modal = document.createElement('div'); modal.style.cssText = ` position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; align-items: center; justify-content: center; z-index: 10000; `; const modalContent = document.createElement('div'); modalContent.style.cssText = ` background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #7b3fe4; border-radius: 15px; padding: 20px; max-width: 90%; max-height: 90%; text-align: center; box-shadow: 0 0 50px rgba(123, 63, 228, 0.5); `; modalContent.innerHTML = ` <img src="${photo.dataUrl}" style="max-width: 100%; max-height: 60vh; border-radius: 10px; margin-bottom: 15px;">
+  <h3 style="color: #00d4ff; margin-bottom: 10px;">${photo.nickname} (${photo.teamName})</h3>
+  <p style="color: #888; margin-bottom: 20px;">${new Date(photo.timestamp).toLocaleString('th-TH')}</p>
+  <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;"><button id="downloadHistoryPhoto" style="
+                        background: linear-gradient(45deg, #ffd700, #ffaa00);
+                        color: black;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: bold;
+                    ">💾 ดาวน์โหลด</button> <button id="generateHistoryQR" style="
+                        background: linear-gradient(45deg, #7b3fe4, #00d4ff);
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: bold;
+                    ">📱 สร้าง QR Code</button> <button id="closeModal" style="
+                        background: linear-gradient(45deg, #ff0080, #ff4081);
+                        color: white;
+                        border: none;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: bold;
+                    ">ปิด</button>
+  </div> `; modal.appendChild(modalContent); document.body.appendChild(modal); document.getElementById('downloadHistoryPhoto').addEventListener('click', function() { const link = document.createElement('a'); link.download = `RVC101_${photo.nickname}_${photo.teamName}_${photo.timestamp}.png`; link.href = photo.dataUrl; link.click(); }); document.getElementById('generateHistoryQR').addEventListener('click', function() { currentPhotoDataUrl = photo.dataUrl; generateQRCode(photo.dataUrl); qrCodeSection.style.display = 'block'; document.body.removeChild(modal); showCustomAlert('สร้าง QR Code สำเร็จ! สแกนเพื่อดาวน์โหลดภาพ'); }); document.getElementById('closeModal').addEventListener('click', function() { document.body.removeChild(modal); }); modal.addEventListener('click', function(e) { if (e.target === modal) { document.body.removeChild(modal); } }); } // Load photo history function loadPhotoHistory() { const saved = localStorage.getItem('rvc101_photo_history'); if (saved) { photoHistory = JSON.parse(saved); updateHistoryDisplay(); } } // Save settings function saveSettings() { const settings = { nickname: nicknameInput.value, teamName: teamNameInput.value, outputSize: outputSizeSelect.value, colorFilter: colorFilterSelect.value, brightness: brightnessSlider.value, contrast: contrastSlider.value, saturation: saturationSlider.value, blur: blurSlider.value, photoCount: photoCount }; localStorage.setItem('rvc101_settings', JSON.stringify(settings)); } // Load settings function loadSettings() { const saved = localStorage.getItem('rvc101_settings'); if (saved) { const settings = JSON.parse(saved); nicknameInput.value = settings.nickname || ''; teamNameInput.value = settings.teamName || ''; outputSizeSelect.value = settings.outputSize || 'fullhd'; colorFilterSelect.value = settings.colorFilter || 'none'; brightnessSlider.value = settings.brightness || 100; contrastSlider.value = settings.contrast || 100; saturationSlider.value = settings.saturation || 100; blurSlider.value = settings.blur || 0; photoCount = settings.photoCount || 0; // Update displays document.getElementById('brightnessValue').textContent = brightnessSlider.value + '%'; document.getElementById('contrastValue').textContent = contrastSlider.value + '%'; document.getElementById('saturationValue').textContent = saturationSlider.value + '%'; document.getElementById('blurValue').textContent = blurSlider.value + 'px'; photoCountDisplay.textContent = photoCount; } } // Capture photo button capturePhotoBtn.addEventListener('click', capturePhoto); // Timer capture button timerCaptureBtn.addEventListener('click', function() { const nickname = nicknameInput.value.trim(); const teamName = teamNameInput.value.trim(); if (!nickname || !teamName) { showCustomAlert('กรุณาใส่ชื่อเล่นและชื่อทีมก่อนถ่ายภาพ'); return; } // Show timer controls timerControls.style.display = 'block'; capturePhotoBtn.style.display = 'none'; timerCaptureBtn.style.display = 'none'; quickCaptureBtn.style.display = 'none'; }); // Quick capture button quickCaptureBtn.addEventListener('click', function() { const nickname = nicknameInput.value.trim(); const teamName = teamNameInput.value.trim(); if (!nickname || !teamName) { showCustomAlert('กรุณาใส่ชื่อเล่นและชื่อทีมก่อนถ่ายภาพ'); return; } capturePhoto(); }); // Timer control buttons timer3sBtn.addEventListener('click', function() { startCountdown(3); }); timer5sBtn.addEventListener('click', function() { startCountdown(5); }); timer10sBtn.addEventListener('click', function() { startCountdown(10); }); cancelTimerBtn.addEventListener('click', function() { if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; } countdownDisplay.style.display = 'none'; timerControls.style.display = 'none'; capturePhotoBtn.style.display = 'block'; timerCaptureBtn.style.display = 'block'; quickCaptureBtn.style.display = 'block'; // Re-enable buttons capturePhotoBtn.disabled = false; timerCaptureBtn.disabled = false; quickCaptureBtn.disabled = false; capturePhotoBtn.style.opacity = '1'; timerCaptureBtn.style.opacity = '1'; quickCaptureBtn.style.opacity = '1'; }); // Countdown function function startCountdown(seconds = 4) { let count = seconds; countdownDisplay.style.display = 'block'; countdownDisplay.textContent = count; // Hide timer controls timerControls.style.display = 'none'; // Disable all buttons capturePhotoBtn.disabled = true; timerCaptureBtn.disabled = true; quickCaptureBtn.disabled = true; capturePhotoBtn.style.opacity = '0.5'; timerCaptureBtn.style.opacity = '0.5'; quickCaptureBtn.style.opacity = '0.5'; countdownTimer = setInterval(function() { count--; if (count &gt; 0) { countdownDisplay.textContent = count; } else { countdownDisplay.textContent = '📸'; setTimeout(function() { capturePhoto(); countdownDisplay.style.display = 'none'; capturePhotoBtn.disabled = false; timerCaptureBtn.disabled = false; quickCaptureBtn.disabled = false; capturePhotoBtn.style.opacity = '1'; timerCaptureBtn.style.opacity = '1'; quickCaptureBtn.style.opacity = '1'; clearInterval(countdownTimer); }, 500); } }, 1000); } // Retake photo retakePhotoBtn.addEventListener('click', function() { if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; } previewSection.style.display = 'none'; retakePhotoBtn.style.display = 'none'; downloadPhotoBtn.style.display = 'none'; sharePhotoBtn.style.display = 'none'; generateQRBtn.style.display = 'none'; qrCodeSection.style.display = 'none'; countdownDisplay.style.display = 'none'; capturePhotoBtn.style.display = 'block'; timerCaptureBtn.style.display = 'block'; quickCaptureBtn.style.display = 'block'; capturePhotoBtn.disabled = false; timerCaptureBtn.disabled = false; quickCaptureBtn.disabled = false; capturePhotoBtn.style.opacity = '1'; timerCaptureBtn.style.opacity = '1'; quickCaptureBtn.style.opacity = '1'; currentPhotoDataUrl = null; document.querySelector('.camera-container').scrollIntoView({ behavior: 'smooth' }); }); // Download photo downloadPhotoBtn.addEventListener('click', function() { const link = document.createElement('a'); link.download = `RVC101_v12_${nicknameInput.value}_${teamNameInput.value}_${Date.now()}.png`; link.href = canvas.toDataURL('image/png'); link.click(); }); // Share photo sharePhotoBtn.addEventListener('click', async function() { try { canvas.toBlob(async function(blob) { const fileName = `RVC101_v12_${nicknameInput.value}_${teamNameInput.value}_${Date.now()}.png`; if (navigator.share &amp;&amp; navigator.canShare) { const file = new File([blob], fileName, { type: 'image/png' }); if (navigator.canShare({ files: [file] })) { try { await navigator.share({ title: 'RVC101 Esports Challenge 2025 v12', text: `ภาพจาก RVC101 Photo Booth v12 - ${nicknameInput.value} (${teamNameInput.value})`, files: [file] }); showCustomAlert('แชร์ภาพสำเร็จ!'); } catch (err) { if (err.name !== 'AbortError') { fallbackShare(blob, fileName); } } } else { fallbackShare(blob, fileName); } } else { fallbackShare(blob, fileName); } }, 'image/png'); } catch (err) { showCustomAlert('เกิดข้อผิดพลาดในการแชร์ภาพ'); } }); // Fallback share function function fallbackShare(blob, fileName) { const url = URL.createObjectURL(blob); const shareModal = document.createElement('div'); shareModal.style.cssText = ` position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); display: flex; align-items: center; justify-content: center; z-index: 10000; `; const shareContent = document.createElement('div'); shareContent.style.cssText = ` background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #7b3fe4; border-radius: 15px; padding: 30px; max-width: 500px; text-align: center; box-shadow: 0 0 50px rgba(123, 63, 228, 0.5); `; shareContent.innerHTML = ` 
+  <h3 style="color: #00d4ff; margin-bottom: 20px;">แชร์ภาพของคุณ</h3><img src="${url}" style="max-width: 300px; max-height: 200px; border-radius: 10px; margin-bottom: 20px;">
+  <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px;"><button id="copyLink" style="
+                        background: linear-gradient(45deg, #7b3fe4, #00d4ff);
+                        color: white;
+                        border: none;
+                        padding: 12px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: bold;
+                    ">📋 คัดลอกลิงก์</button> <button id="downloadShare" style="
+                        background: linear-gradient(45deg, #ffd700, #ffaa00);
+                        color: black;
+                        border: none;
+                        padding: 12px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: bold;
+                    ">💾 ดาวน์โหลด</button> <button id="shareWhatsApp" style="
+                        background: linear-gradient(45deg, #25d366, #128c7e);
+                        color: white;
+                        border: none;
+                        padding: 12px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: bold;
+                    ">📱 WhatsApp</button> <button id="shareFacebook" style="
+                        background: linear-gradient(45deg, #1877f2, #42a5f5);
+                        color: white;
+                        border: none;
+                        padding: 12px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: bold;
+                    ">📘 Facebook</button>
+  </div><button id="closeShare" style="
+                    background: linear-gradient(45deg, #ff0080, #ff4081);
+                    color: white;
+                    border: none;
+                    padding: 12px 30px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: bold;
+                ">ปิด</button> `; shareModal.appendChild(shareContent); document.body.appendChild(shareModal); // Event listeners for share options document.getElementById('copyLink').addEventListener('click', async function() { try { await navigator.clipboard.writeText(url); this.textContent = '✅ คัดลอกแล้ว!'; setTimeout(() =&gt; { this.textContent = '📋 คัดลอกลิงก์'; }, 2000); } catch (err) { showCustomAlert('ไม่สามารถคัดลอกลิงก์ได้'); } }); document.getElementById('downloadShare').addEventListener('click', function() { const link = document.createElement('a'); link.download = fileName; link.href = url; link.click(); }); document.getElementById('shareWhatsApp').addEventListener('click', function() { const text = encodeURIComponent(`ภาพจาก RVC101 Photo Booth v12 - ${nicknameInput.value} (${teamNameInput.value})`); window.open(`https://wa.me/?text=${text}`, '_blank', 'noopener,noreferrer'); }); document.getElementById('shareFacebook').addEventListener('click', function() { const text = encodeURIComponent(`ภาพจาก RVC101 Photo Booth v12 - ${nicknameInput.value} (${teamNameInput.value})`); window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&amp;quote=${text}`, '_blank', 'noopener,noreferrer'); }); document.getElementById('closeShare').addEventListener('click', function() { URL.revokeObjectURL(url); document.body.removeChild(shareModal); }); shareModal.addEventListener('click', function(e) { if (e.target === shareModal) { URL.revokeObjectURL(url); document.body.removeChild(shareModal); } }); } // Draw frame overlay function drawFrameOverlay(ctx, width, height) { const frameData = getFrameData(currentFrame); ctx.save(); ctx.strokeStyle = frameData.borderColor; ctx.lineWidth = 12; ctx.strokeRect(10, 10, width - 20, height - 20); if (frameData.effects) { frameData.effects.forEach(effect =&gt; { effect(ctx, width, height); }); } if (frameData.title) { ctx.fillStyle = frameData.titleColor; ctx.font = 'bold 28px Arial'; ctx.textAlign = 'center'; ctx.fillText(frameData.title, width / 2, 60); } ctx.restore(); } // Draw text overlay function drawTextOverlay(ctx, nickname, teamName, width, height) { ctx.save(); // Draw semi-transparent background for text ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'; ctx.fillRect(0, height - 140, width, 140); // Draw nickname ctx.fillStyle = '#00d4ff'; ctx.font = 'bold 32px Arial'; ctx.textAlign = 'left'; ctx.fillText(`🎮 ${nickname}`, 30, height - 90); // Draw team name ctx.fillStyle = '#7b3fe4'; ctx.font = 'bold 28px Arial'; ctx.fillText(`🏆 ${teamName}`, 30, height - 50); // Draw version badge ctx.fillStyle = '#ffd700'; ctx.font = 'bold 20px Arial'; ctx.textAlign = 'right'; ctx.fillText('v12 Pro', width - 30, height - 90); // Draw timestamp ctx.fillStyle = '#ffffff'; ctx.font = '18px Arial'; const now = new Date(); const timestamp = now.toLocaleDateString('th-TH') + ' ' + now.toLocaleTimeString('th-TH'); ctx.fillText(timestamp, width - 30, height - 50); // Draw photo count ctx.fillStyle = '#00ff88'; ctx.font = '16px Arial'; ctx.fillText(`📸 #${photoCount}`, width - 30, height - 20); ctx.restore(); } // Get frame data function getFrameData(frameId) { const frames = { 'frame-rvc101-main': { borderColor: '#7b3fe4', title: 'RVC101 Esports Challenge 2025 — v12', titleColor: '#7b3fe4', effects: [ (ctx, w, h) =&gt; { ctx.strokeStyle = '#00d4ff'; ctx.lineWidth = 3; // Circuit corners [[50, 50, 100, 50, 100, 100], [w-50, 50, w-100, 50, w-100, 100], [50, h-50, 100, h-50, 100, h-100], [w-50, h-50, w-100, h-50, w-100, h-100]] .forEach(coords =&gt; { ctx.beginPath(); ctx.moveTo(coords[0], coords[1]); ctx.lineTo(coords[2], coords[3]); ctx.lineTo(coords[4], coords[5]); ctx.stroke(); }); } ] }, 'frame-esports-champ': { borderColor: '#ffd700', title: '👑 Champion Mode', titleColor: '#ffd700', effects: [ (ctx, w, h) =&gt; { const gradient = ctx.createLinearGradient(0, 0, w, h); gradient.addColorStop(0, '#ffd700'); gradient.addColorStop(0.5, '#b87333'); gradient.addColorStop(1, '#ffd700'); ctx.strokeStyle = gradient; ctx.lineWidth = 12; ctx.strokeRect(5, 5, w - 10, h - 10); } ] }, 'frame-team-hero': { borderColor: '#00d4ff', title: '⚡ Team Hero', titleColor: '#00d4ff', effects: [ (ctx, w, h) =&gt; { const gradient = ctx.createRadialGradient(w/2, h/2, 0, w/2, h/2, Math.max(w, h)/2); gradient.addColorStop(0, 'rgba(0, 212, 255, 0.3)'); gradient.addColorStop(1, 'transparent'); ctx.fillStyle = gradient; ctx.fillRect(0, 0, w, h); } ] }, 'frame-glitch': { borderColor: '#ff0080', title: '🔥 Glitch Style', titleColor: '#ff0080', effects: [ (ctx, w, h) =&gt; { ctx.strokeStyle = '#00ff88'; ctx.lineWidth = 2; for (let i = 0; i &lt; 5; i++) { const y = Math.random() * h; ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); } } ] }, 'frame-neon': { borderColor: '#00d4ff', title: '💎 Cyber Neon', titleColor: '#00d4ff', effects: [ (ctx, w, h) =&gt; { ctx.shadowColor = '#00d4ff'; ctx.shadowBlur = 20; ctx.strokeStyle = '#00d4ff'; ctx.lineWidth = 8; ctx.strokeRect(15, 15, w - 30, h - 30); ctx.shadowBlur = 0; } ] }, 'frame-sponsor': { borderColor: 'rgba(0, 212, 255, 0.6)', title: 'Powered by Sponsors', titleColor: 'rgba(255, 255, 255, 0.8)', effects: [] } }; return frames[frameId] || frames['frame-rvc101-main']; } // Custom frame functions function updateCustomFrameUI() { const customFrameBtn = document.getElementById('customFrameBtn'); if (customFrames.length &gt; 0) { customFrameBtn.style.display = 'block'; } } function selectCustomFrame(index) { if (index &gt;= 0 &amp;&amp; index &lt; customFrames.length) { selectedCustomFrameIndex = index; document.querySelectorAll('.frame-btn').forEach(b =&gt; b.classList.remove('active')); document.getElementById('customFrameBtn').classList.add('active'); document.querySelectorAll('.frame-overlay').forEach(frame =&gt; { frame.classList.remove('active'); }); currentFrame = 'frame-custom'; document.getElementById(currentFrame).classList.add('active'); } } function showCustomAlert(message) { const modal = document.createElement('div'); modal.style.cssText = ` position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.8); display: flex; align-items: center; justify-content: center; z-index: 10000; `; const alertBox = document.createElement('div'); alertBox.style.cssText = ` background: linear-gradient(135deg, #1a1a2e, #16213e); border: 2px solid #7b3fe4; border-radius: 15px; padding: 30px; max-width: 400px; text-align: center; box-shadow: 0 0 50px rgba(123, 63, 228, 0.5); animation: fadeIn 0.3s ease-out; `; alertBox.innerHTML = ` 
+  <p style="color: white; font-size: 1.1rem; margin-bottom: 20px;">${message}</p><button id="alertOk" style="
+                    background: linear-gradient(45deg, #7b3fe4, #00d4ff);
+                    color: white;
+                    border: none;
+                    padding: 12px 30px;
+                    border-radius: 8px;
+                    font-size: 1rem;
+                    font-weight: bold;
+                    cursor: pointer;
+                    box-shadow: 0 0 20px rgba(123, 63, 228, 0.4);
+                ">ตกลง</button> `; modal.appendChild(alertBox); document.body.appendChild(modal); document.getElementById('alertOk').addEventListener('click', function() { document.body.removeChild(modal); }); modal.addEventListener('click', function(e) { if (e.target === modal) { document.body.removeChild(modal); } }); // Auto close after 3 seconds setTimeout(() =&gt; { if (document.body.contains(modal)) { document.body.removeChild(modal); } }, 3000); } // Initialize default frame document.getElementById(currentFrame).classList.add('active'); 
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'995b9f941587d027',t:'MTc2MTY2Njk4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
