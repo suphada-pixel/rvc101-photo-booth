@@ -65,14 +65,14 @@ overflow:hidden; position:relative; background:#000;
     video{
 display:block; width:100%; height:auto; }
 
-    /* **CSS สำหรับ Frame Overlay: ต้องมี object-fit: cover/contain เพื่อให้พอดี** */
+    /* CSS สำหรับ Frame Overlay */
     .camera img#frameOverlay{
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        **object-fit: cover; /* ใช้ cover เพื่อให้เต็มพื้นที่, หรือ contain หากต้องการให้เห็นทั้งกรอบ */**
+        object-fit: cover; /* ใช้ cover เพื่อให้เต็มพื้นที่, หรือ contain หากต้องการให้เห็นทั้งกรอบ */
         pointer-events: none;
         z-index: 10;
     }
@@ -371,14 +371,13 @@ id="work" style="display:none;"></canvas>
     let currentDataUrl
 = null;
     
-    // **NEW: Map สำหรับ Built-in Frame URLs**
+    // **Frame URLs: ต้องแก้ไขพาธ (Path) เหล่านี้ให้ตรงกับตำแหน่งไฟล์ของคุณ**
     const FrameImageMap = {
-        'main': 'assets/frames/rvc101_main_frame.png',      // **ต้องเปลี่ยนเป็นพาธจริง**
-        'champ': 'assets/frames/rvc101_champ_frame.png',    // **ต้องเปลี่ยนเป็นพาธจริง**
-        'hero': 'assets/frames/rvc101_hero_frame.png',      // **ต้องเปลี่ยนเป็นพาธจริง**
-        // หมายเหตุ: เฟรม Glitch/Neon/Sponsor ไม่มีไฟล์ภาพ แต่ใช้วาดด้วย Canvas
+        'main': 'assets/frames/rvc101_main_frame.png',
+        'champ': 'assets/frames/rvc101_champ_frame.png',
+        'hero': 'assets/frames/rvc101_hero_frame.png',
+        // Glitch, Neon, Sponsor ถูกวาดด้วย Canvas
     };
-    // **END NEW**
  
     //
 ======= DOM =======
@@ -459,7 +458,7 @@ document.getElementById('qrCanvas');
       applyFilters();
     });
 
-    // **แก้ไข: ฟังก์ชันใหม่สำหรับแสดง Frame Overlay บนจอวิดีโอ**
+    // ฟังก์ชันสำหรับแสดง Frame Overlay บนจอวิดีโอ (Live View)
     function updateFrameOverlay() {
         let frameSrc = null;
 
@@ -470,11 +469,10 @@ document.getElementById('qrCanvas');
                 frameSrc = customImg.src;
             }
         } else if (FrameImageMap[currentFrame]) {
-            // 2. Built-in Frame ที่มีไฟล์ภาพ (ต้องแน่ใจว่าไฟล์อยู่จริง)
+            // 2. Built-in Frame ที่มีไฟล์ภาพ (Main, Champ, Hero)
             frameSrc = FrameImageMap[currentFrame];
         } else {
-            // 3. Built-in Frame ที่วาดด้วย Canvas (Glitch, Neon, Sponsor) หรือไม่มี
-            // พวกนี้วาดด้วย Canvas ตอน Capture เท่านั้น ไม่ต้องแสดง Overlay สด
+            // 3. Built-in Frame ที่วาดด้วย Canvas (Glitch, Neon, Sponsor)
             frameOverlay.style.display = 'none';
             return;
         }
@@ -487,7 +485,7 @@ document.getElementById('qrCanvas');
         }
     }
     
-    // ฟังก์ชันจัดการการคลิกปุ่มเฟรม (อัปเดตเพื่อรองรับ Custom Frames และ Overlay)
+    // ฟังก์ชันจัดการการคลิกปุ่มเฟรม
     function handleFrameClick(e) {
         const el = e.currentTarget;
         // ลบ active จากปุ่มทั้งหมดในทุกคอนเทนเนอร์
@@ -512,7 +510,7 @@ document.getElementById('qrCanvas');
     }
 
     setupFrameButtons(); // เรียกใช้งานครั้งแรกสำหรับปุ่ม Built-in
-    updateFrameOverlay(); // **NEW: แสดง Frame Overlay เริ่มต้น**
+    updateFrameOverlay(); // แสดง Frame Overlay เริ่มต้น
 
     // Logic สำหรับการอัปโหลดหลายไฟล์ (Multiple Custom Frames)
     customInput.addEventListener('change', e => {
@@ -615,7 +613,7 @@ startCamera(isRestart=false){
       try{
         if (stream){
 stream.getTracks().forEach(t => t.stop()); }
-          // ตั้งค่าความละเอียดเป็น 1920x1080
+          // **การตั้งค่าความละเอียดเป็น 1920x1080**
         const
 constraints = { video: { facingMode: currentFacing, width:{exact:1920}, 
 height:{exact:1080} } }; 
@@ -639,9 +637,7 @@ b.disabled = false);
 กรุณาใช้ HTTPS และอนุญาตสิทธิ์กล้อง');
       }
     }
-// ... (ส่วนที่เหลือเหมือนเดิม)
-// ... (ส่วนที่เหลือเหมือนเดิม)
-// ... (ส่วนที่เหลือเหมือนเดิม)
+ 
     function
 applyFilters(){
       const f =
@@ -806,11 +802,146 @@ ctx.font='bold 26px Arial'; ctx.textAlign='center';
       ctx.restore();
     }
  
-// ... (ส่วนที่เหลือของโค้ด)
-// ... (ส่วนที่เหลือของโค้ด)
-// ... (ส่วนที่เหลือของโค้ด)
+    function
+drawTextOverlay(ctx, w, h){
+      const n =
+nickname.value.trim();
+      const t =
+team.value.trim();
+      const now = new
+Date();
+      const ts =
+now.toLocaleDateString('th-TH') + ' ' + now.toLocaleTimeString('th-TH');
  
-// ... (ส่วนที่เหลือของโค้ด)
+     // แถบดำล่าง
+     ctx.fillStyle='rgba(0,0,0,.65)'; ctx.fillRect(0,
+h-130, w, 130);
+ 
+      ctx.fillStyle='#00d4ff';
+ctx.font='bold 32px Arial'; ctx.textAlign='left';
+      ctx.fillText(`🎮
+${n}`, 26, h-86);
+ 
+      ctx.fillStyle='#7b3fe4';
+ctx.font='bold 28px Arial';
+      ctx.fillText(`🏆
+${t}`, 26, h-46);
+ 
+     ctx.textAlign='right';
+     ctx.fillStyle='#ffd700'; ctx.font='bold 20px
+Arial';
+      ctx.fillText('v12
+Clean', w-26, h-86);
+ 
+     ctx.fillStyle='#ffffff'; ctx.font='18px Arial';
+      ctx.fillText(ts,
+w-26, h-46);
+    }
+ 
+    function
+validateNames(){
+      if
+(!nickname.value.trim() || !team.value.trim()){
+        alert('กรุณาใส่ชื่อเล่นและชื่อทีมก่อนถ่ายภาพ');
+        return false;
+      }
+      return true;
+    }
+ 
+    //
+======= Countdown & UX =======
+    let countdownTimer
+= null;
+    function
+startCountdown(sec){
+      if
+(!validateNames()) return;
+     timerRow.style.display = 'none';
+     countdownEl.style.display = 'block';
+     countdownEl.textContent = sec;
+     disableTopButtons(true);
+ 
+      countdownTimer =
+setInterval(()=>{
+        sec--;
+        if (sec>0){
+countdownEl.textContent = sec; }
+        else{
+         countdownEl.textContent = '📸';
+         setTimeout(()=>{
+            capture();
+           cancelCountdown();
+          }, 450);
+        }
+      },1000);
+    }
+    function
+cancelCountdown(){
+      if
+(countdownTimer){ clearInterval(countdownTimer); countdownTimer = null; }
+     countdownEl.style.display = 'none';
+     disableTopButtons(false);
+    }
+    function
+disableTopButtons(disabled){
+      [startBtn,switchBtn,rotateBtn,captureBtn,timerBtn].forEach(b
+=> {
+        if
+(b.id==='startCamera') return; // ไม่ล็อกปุ่มเปิดกล้อง
+        b.disabled =
+disabled;
+      });
+    }
+ 
+    //
+======= QR helper & UX =======
+    async function
+buildDownloadHTMLDataURL(imageDataUrl){
+     // ย่อ/บีบอัดเป็น JPEG เพื่อให้ QR ไม่ยาวเกิน
+      const optimized
+= await resizeCompress(imageDataUrl, 1280, 0.7);
+      const page =
+`<html><meta charset="utf-8"><title>RVC101
+Photo</title>
+<body style="margin:0;font-family:Arial;text-align:center;background:#111;color:#eee">
+<h2>📸 กำลังดาวน์โหลดภาพ...</h2>
+<img src="${optimized}" style="max-width:95%;margin:10px
+auto;display:block;border:1px solid #444">
+<script>
+var
+a=document.createElement('a');a.href='${optimized}';a.download='RVC101_${Date.now()}.jpg';
+document.body.appendChild(a);a.click();
+<\/script>
+</body></html>`;
+      return
+'data:text/html;charset=utf-8,' + encodeURIComponent(page);
+    }
+ 
+    function
+resizeCompress(src, maxW=1280, q=0.7){
+      return new
+Promise((resolve,reject)=>{
+        const img=new
+Image();
+       img.onload=()=>{
+          const ratio
+= img.width>maxW ? maxW/img.width : 1;
+          const w =
+Math.round(img.width*ratio);
+          const h =
+Math.round(img.height*ratio);
+          const
+c=document.createElement('canvas'); c.width=w; c.height=h;
+         c.getContext('2d').drawImage(img,0,0,w,h);
+         resolve(c.toDataURL('image/jpeg', q));
+        };
+       img.onerror=reject;
+        img.src=src;
+      });
+    }
+ 
+    //
+======= Small UX =======
     function
 flashWhite(){
       const
