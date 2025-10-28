@@ -777,11 +777,37 @@
                     height: 100%;
                     pointer-events: none;
                     z-index: 10;
+                    border-radius: 15px;
                 `;
                 video.parentElement.style.position = 'relative';
                 video.parentElement.appendChild(previewCanvas);
             }
             
+            // Get video element dimensions and position
+            const videoRect = video.getBoundingClientRect();
+            const containerRect = video.parentElement.getBoundingClientRect();
+            
+            // Calculate actual video display size (considering object-fit: cover)
+            const videoAspectRatio = video.videoWidth / video.videoHeight;
+            const containerAspectRatio = video.offsetWidth / video.offsetHeight;
+            
+            let displayWidth, displayHeight, offsetX, offsetY;
+            
+            if (videoAspectRatio > containerAspectRatio) {
+                // Video is wider - height fits, width is cropped
+                displayHeight = video.offsetHeight;
+                displayWidth = displayHeight * videoAspectRatio;
+                offsetX = (video.offsetWidth - displayWidth) / 2;
+                offsetY = 0;
+            } else {
+                // Video is taller - width fits, height is cropped
+                displayWidth = video.offsetWidth;
+                displayHeight = displayWidth / videoAspectRatio;
+                offsetX = 0;
+                offsetY = (video.offsetHeight - displayHeight) / 2;
+            }
+            
+            // Set canvas size to match video container
             previewCanvas.width = video.offsetWidth;
             previewCanvas.height = video.offsetHeight;
             const previewCtx = previewCanvas.getContext('2d');
@@ -799,8 +825,10 @@
                 const frameImg = new Image();
                 frameImg.onload = function() {
                     previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-                    previewCtx.globalAlpha = 0.7; // Make frame semi-transparent for preview
-                    previewCtx.drawImage(frameImg, 0, 0, previewCanvas.width, previewCanvas.height);
+                    previewCtx.globalAlpha = 0.8; // Make frame semi-transparent for preview
+                    
+                    // Draw frame to match the actual video display area
+                    previewCtx.drawImage(frameImg, offsetX, offsetY, displayWidth, displayHeight);
                     previewCtx.globalAlpha = 1.0;
                 };
                 frameImg.src = frameImageData;
@@ -890,5 +918,5 @@
             }
         });
     </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'995e46a9e5fc26c1',t:'MTc2MTY5NDgwMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'995e5300569226c1',t:'MTc2MTY5NTMwOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
