@@ -77,4 +77,213 @@
             <p>กด “เปิดกล้อง” เพื่อเริ่ม</p>
             <small>ต้องอนุญาตสิทธิ์กล้อง / ใช้งานผ่าน HTTPS</small>
           </div>
-          <
+          <!-- dynamic overlays -->
+          <img id="overlayImg" class="frame-overlay" alt="">
+        </div>
+
+        <div class="btns">
+          <button class="btn" id="start">📷 เปิดกล้อง</button>
+          <button class="btn alt" id="rotate">↻ หมุน 90°</button>
+          <button class="btn warn" id="capture">📸 ถ่ายภาพ</button>
+          <button class="btn alt" id="timer">⏰ ตั้งเวลา</button>
+        </div>
+
+        <div class="btns" id="timerRow" style="display:none;">
+          <button class="btn alt" data-t="3">3 วิ</button>
+          <button class="btn alt" data-t="5">5 วิ</button>
+          <button class="btn alt" data-t="10">10 วิ</button>
+          <button class="btn" id="cancelT">❌ ยกเลิก</button>
+        </div>
+
+        <div class="panel preview" id="preview" style="display:none;margin-top:10px;">
+          <div style="text-align:center;font-weight:700;margin-bottom:8px">ภาพที่ถ่าย</div>
+          <img id="prevImg" alt="preview">
+          <div class="btns">
+            <button class="btn" id="dl">💾 ดาวน์โหลด</button>
+            <button class="btn alt" id="qr">📱 QR Code</button>
+          </div>
+          <div class="qr" id="qrBox" style="display:none;">
+            <canvas id="qrCanvas"></canvas>
+            <p style="font-size:.8rem;color:#ccc">สแกนเพื่อดาวน์โหลดภาพ</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- CONTROLS -->
+      <aside class="panel controls">
+        <label>ชื่อเล่น</label><input id="nick" type="text" placeholder="เช่น โฟกัส">
+        <label>ชื่อทีม</label><input id="team" type="text" placeholder="เช่น Team Hero">
+
+        <label>ความสว่าง <span id="bVal">100%</span></label>
+        <input id="bright" type="range" min="50" max="150" value="100">
+        <label>คอนทราสต์ <span id="cVal">100%</span></label>
+        <input id="cont" type="range" min="50" max="150" value="100">
+
+        <label>เลือกกรอบกิจกรรม</label>
+        <div class="frames" id="frameBtns">
+          <div class="frame-btn active" data-frame="main">RVC101 Main</div>
+          <div class="frame-btn" data-frame="champ">Champion</div>
+          <div class="frame-btn" data-frame="hero">Team Hero</div>
+          <div class="frame-btn" data-frame="neon">Neon</div>
+          <div class="frame-btn" data-frame="glitch">Glitch</div>
+        </div>
+
+        <label style="margin-top:10px;">อัปโหลดกรอบเอง (PNG/JPG ได้หลายไฟล์)</label>
+        <input id="upload" type="file" accept="image/*" multiple>
+
+        <label style="margin-top:10px;">ขนาดภาพส่งออก</label>
+        <select id="size">
+          <option value="hd">HD (1280x720)</option>
+          <option value="fullhd" selected>Full HD (1920x1080)</option>
+        </select>
+      </aside>
+    </div>
+
+    <footer>
+      จัดทำโดย ครูสุภาดา คำตา | แผนกเทคโนโลยีสารสนเทศ วิทยาลัยอาชีวศึกษาร้อยเอ็ด
+    </footer>
+  </div>
+
+  <canvas id="work" style="display:none"></canvas>
+
+  <script>
+  let stream=null,rotation=0,currentFrame='main',customFrames=[];
+  const v=document.getElementById('video'),ph=document.getElementById('ph');
+  const start=document.getElementById('start'),rotate=document.getElementById('rotate');
+  const capture=document.getElementById('capture'),timer=document.getElementById('timer');
+  const timerRow=document.getElementById('timerRow'),cancelT=document.getElementById('cancelT');
+  const bright=document.getElementById('bright'),cont=document.getElementById('cont');
+  const bVal=document.getElementById('bVal'),cVal=document.getElementById('cVal');
+  const overlay=document.getElementById('overlayImg');
+  const frameBtns=document.getElementById('frameBtns');
+  const upload=document.getElementById('upload');
+  const nick=document.getElementById('nick'),team=document.getElementById('team');
+  const work=document.getElementById('work'),ctx=work.getContext('2d');
+  const preview=document.getElementById('preview'),prevImg=document.getElementById('prevImg');
+  const dl=document.getElementById('dl'),qr=document.getElementById('qr'),qrBox=document.getElementById('qrBox'),qrCanvas=document.getElementById('qrCanvas');
+  const sizeSel=document.getElementById('size');
+
+  bright.oninput=()=>{bVal.textContent=bright.value+'%';applyFilter();}
+  cont.oninput=()=>{cVal.textContent=cont.value+'%';applyFilter();}
+
+  frameBtns.onclick=e=>{
+    const el=e.target.closest('.frame-btn');if(!el)return;
+    frameBtns.querySelectorAll('.frame-btn').forEach(b=>b.classList.remove('active'));
+    el.classList.add('active');currentFrame=el.dataset.frame;
+    updateOverlay();
+  }
+
+  upload.onchange=e=>{
+    const files=[...e.target.files];
+    files.forEach((f,i)=>{
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        const img=new Image();
+        img.onload=()=>{
+          customFrames.push({name:f.name,image:img});
+          addCustomButton(f.name,customFrames.length-1);
+        }
+        img.src=ev.target.result;
+      }
+      reader.readAsDataURL(f);
+    });
+  }
+
+  function addCustomButton(name,idx){
+    const btn=document.createElement('div');
+    btn.className='frame-btn';
+    btn.textContent='🖼 '+name.split('.')[0];
+    btn.dataset.frame='custom'+idx;
+    btn.onclick=()=>{
+      frameBtns.querySelectorAll('.frame-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFrame='custom'+idx;
+      updateOverlay();
+    }
+    frameBtns.appendChild(btn);
+  }
+
+  start.onclick=async()=>{
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({video:true});
+      v.srcObject=stream;await v.play();
+      v.style.display='block';ph.style.display='none';
+      [rotate,capture,timer].forEach(b=>b.disabled=false);
+      applyFilter();
+    }catch(e){alert('ไม่สามารถเปิดกล้องได้');}
+  }
+
+  rotate.onclick=()=>{rotation=(rotation+90)%360;applyFilter();}
+  function applyFilter(){v.style.filter=`brightness(${bright.value}%) contrast(${cont.value}%)`;v.style.transform=`rotate(${rotation}deg)`;}
+
+  capture.onclick=capturePhoto;
+  timer.onclick=()=>timerRow.style.display='flex';
+  timerRow.onclick=e=>{
+    const t=e.target.dataset.t;if(!t)return;
+    timerRow.style.display='none';let sec=parseInt(t);const id=setInterval(()=>{
+      if(sec<=0){clearInterval(id);capturePhoto();}
+      else{capture.textContent='⏰ '+sec+' วิ';sec--;}
+    },1000);
+  }
+  cancelT.onclick=()=>timerRow.style.display='none';
+
+  function capturePhoto(){
+    if(!nick.value.trim()||!team.value.trim()){alert('กรุณาใส่ชื่อและทีม');return;}
+    const s=sizeSel.value;let w=1920,h=1080;if(s==='hd'){w=1280;h=720;}
+    work.width=w;work.height=h;ctx.save();
+    if(rotation){ctx.translate(w/2,h/2);ctx.rotate(rotation*Math.PI/180);ctx.translate(-w/2,-h/2);}
+    ctx.filter=`brightness(${bright.value}%) contrast(${cont.value}%)`;
+    ctx.drawImage(v,0,0,w,h);ctx.filter='none';
+    drawFrame(ctx,w,h);drawText(ctx,w,h);
+    ctx.restore();
+    const data=work.toDataURL('image/png');
+    prevImg.src=data;preview.style.display='block';qrBox.style.display='none';
+    currentData=data;flash();
+  }
+
+  function drawFrame(c,w,h){
+    c.save();
+    const id=currentFrame;
+    if(id.startsWith('custom')){
+      const idx=parseInt(id.replace('custom',''));
+      const img=customFrames[idx]?.image;
+      if(img)c.drawImage(img,0,0,w,h);
+    }else{
+      c.strokeStyle='#7b3fe4';c.lineWidth=10;c.strokeRect(10,10,w-20,h-20);
+    }
+    c.restore();
+  }
+
+  function drawText(c,w,h){
+    c.fillStyle='rgba(0,0,0,.6)';c.fillRect(0,h-100,w,100);
+    c.fillStyle='#00d4ff';c.font='bold 30px Arial';c.fillText('🎮 '+nick.value,30,h-60);
+    c.fillStyle='#7b3fe4';c.font='bold 26px Arial';c.fillText('🏆 '+team.value,30,h-25);
+  }
+
+  let currentData=null;
+  dl.onclick=()=>{if(!currentData)return;const a=document.createElement('a');a.href=currentData;a.download='RVC101.png';a.click();}
+  qr.onclick=async()=>{
+    if(!currentData)return;
+    const html='data:text/html;charset=utf-8,'+encodeURIComponent(`<html><body style="margin:0;text-align:center;background:#111;color:#fff"><img src="${currentData}" style="max-width:90%"><script>var a=document.createElement('a');a.href='${currentData}';a.download='RVC101.png';a.click();<\/script></body></html>`);
+    await QRCode.toCanvas(qrCanvas,html,{width:220});
+    qrBox.style.display='block';
+  }
+
+  function updateOverlay(){
+    overlay.style.display='none';
+    if(currentFrame.startsWith('custom')){
+      const idx=parseInt(currentFrame.replace('custom',''));
+      const img=customFrames[idx]?.image;
+      if(img){overlay.src=img.src;overlay.style.display='block';}
+    }else{overlay.src='';}
+  }
+
+  function flash(){
+    const f=document.createElement('div');
+    f.style.cssText='position:fixed;inset:0;background:#fff;opacity:.8;z-index:9999';
+    document.body.appendChild(f);
+    setTimeout(()=>{f.style.transition='opacity .3s';f.style.opacity='0';setTimeout(()=>f.remove(),300);},120);
+  }
+  </script>
+</body>
+</html>
