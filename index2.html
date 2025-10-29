@@ -768,40 +768,40 @@
                     pointer-events: none;
                     z-index: 10;
                     border-radius: 15px;
-                    width: 100%;
-                    height: 100%;
                 `;
                 video.parentElement.style.position = 'relative';
                 video.parentElement.appendChild(previewCanvas);
             }
             
-            // Get video element dimensions
+            // Get video's computed style and actual dimensions
+            const videoStyle = window.getComputedStyle(video);
             const videoRect = video.getBoundingClientRect();
-            const containerRect = video.parentElement.getBoundingClientRect();
             
-            // Calculate video's actual display size with object-fit: cover
+            // Set canvas to exactly match video element size and position
+            previewCanvas.style.width = video.offsetWidth + 'px';
+            previewCanvas.style.height = video.offsetHeight + 'px';
+            previewCanvas.width = video.offsetWidth;
+            previewCanvas.height = video.offsetHeight;
+            
+            // Calculate the actual video content area (considering object-fit: cover)
             const videoAspectRatio = video.videoWidth / video.videoHeight;
             const containerAspectRatio = video.offsetWidth / video.offsetHeight;
             
-            let displayWidth, displayHeight, offsetX, offsetY;
+            let contentWidth, contentHeight, offsetX, offsetY;
             
             if (containerAspectRatio > videoAspectRatio) {
-                // Container is wider - video height fills container, width is cropped
-                displayHeight = video.offsetHeight;
-                displayWidth = displayHeight * videoAspectRatio;
-                offsetX = (video.offsetWidth - displayWidth) / 2;
+                // Container is wider than video - video fills height, width is centered
+                contentHeight = video.offsetHeight;
+                contentWidth = contentHeight * videoAspectRatio;
+                offsetX = (video.offsetWidth - contentWidth) / 2;
                 offsetY = 0;
             } else {
-                // Container is taller - video width fills container, height is cropped
-                displayWidth = video.offsetWidth;
-                displayHeight = displayWidth / videoAspectRatio;
+                // Container is taller than video - video fills width, height is centered
+                contentWidth = video.offsetWidth;
+                contentHeight = contentWidth / videoAspectRatio;
                 offsetX = 0;
-                offsetY = (video.offsetHeight - displayHeight) / 2;
+                offsetY = (video.offsetHeight - contentHeight) / 2;
             }
-            
-            // Set canvas size to match video element exactly
-            previewCanvas.width = video.offsetWidth;
-            previewCanvas.height = video.offsetHeight;
             
             const previewCtx = previewCanvas.getContext('2d');
             previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
@@ -818,10 +818,13 @@
             if (frameImageData) {
                 const frameImg = new Image();
                 frameImg.onload = function() {
-                    previewCtx.globalAlpha = 0.6; // Semi-transparent for preview
+                    // Set transparency for preview
+                    previewCtx.globalAlpha = 0.7;
                     
-                    // Draw frame to match the actual video display area
-                    previewCtx.drawImage(frameImg, offsetX, offsetY, displayWidth, displayHeight);
+                    // Draw frame exactly over the video content area
+                    previewCtx.drawImage(frameImg, offsetX, offsetY, contentWidth, contentHeight);
+                    
+                    // Reset alpha
                     previewCtx.globalAlpha = 1.0;
                 };
                 frameImg.src = frameImageData;
@@ -909,5 +912,5 @@
             }
         });
     </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'995e6c7f128826c1',t:'MTc2MTY5NjM1My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'995e6fca06a426c1',t:'MTc2MTY5NjQ4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
