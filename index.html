@@ -3,22 +3,21 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>RVC101 Photo Booth PRO v3</title>
+<title>RVC101 Photo Booth PRO v4</title>
 <style>
   :root{
-    --bg:#0b0f1a; --card:#12172a; --muted:#2a3354; --text:#e8edff; --accent:#6ee7ff;
+    --bg:#0b0f1a; --card:#12172a; --text:#e8edff; --accent:#6ee7ff;
   }
   *{box-sizing:border-box}
   body{
-    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,TH Sarabun New,Arial;
+    margin:0; font-family:system-ui,TH Sarabun New,Arial;
     color:var(--text);
     background:radial-gradient(1200px 600px at 70% -10%,#122,transparent), var(--bg);
     display:flex; min-height:100vh; align-items:center; justify-content:center; padding:18px;
   }
   .app{
     width:100%; max-width:820px;
-    background:var(--card); border:1px solid #1e2540;
-    border-radius:20px; padding:20px;
+    background:var(--card); border-radius:20px; padding:20px;
     box-shadow:0 10px 40px rgba(0,0,0,.6);
   }
   h1{text-align:center; font-size:22px; margin:0 0 14px;}
@@ -35,6 +34,17 @@
   .overlay-tip{
     position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,.6);
     padding:4px 8px; border-radius:8px; font-size:13px; z-index:11;
+  }
+  #countdown{
+    position:absolute; inset:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:120px; font-weight:bold; color:#fff;
+    text-shadow:0 0 20px #6ee7ff;
+    z-index:20; opacity:0; transition:opacity 0.3s;
+  }
+  #flash{
+    position:absolute; inset:0; background:white; opacity:0;
+    z-index:30; transition:opacity 0.4s ease-out;
   }
   .controls{display:grid; gap:10px; margin-top:16px;}
   .row{display:flex; gap:8px; flex-wrap:wrap; justify-content:center;}
@@ -53,28 +63,29 @@
   }
   .frame-thumb{
     flex:0 0 auto; width:100px; height:60px; border-radius:10px;
-    border:2px solid transparent; cursor:pointer; overflow:hidden; position:relative;
+    border:2px solid transparent; cursor:pointer; overflow:hidden;
     transition:transform .15s;
   }
   .frame-thumb:hover{transform:scale(1.05);}
   .frame-thumb img{width:100%; height:100%; object-fit:cover;}
   .frame-thumb.active{border-color:#6ee7ff;}
-  #qrcode canvas{width:160px!important; height:160px!important;}
   #previewControls{display:none; text-align:center; margin-top:10px;}
   #previewImage{border-radius:16px; width:100%; max-width:720px;}
+  #qrcode canvas{width:160px!important;height:160px!important;}
 </style>
 </head>
 <body>
 <div class="app">
-  <h1>📸 RVC101 E-Sports Challenge 2025 – Photo Booth PRO v3</h1>
+  <h1>📸 RVC101 E-Sports Challenge 2025 – Photo Booth PRO v4</h1>
 
   <div class="stage" id="stage">
     <video id="video" autoplay playsinline muted></video>
     <canvas id="framePreview"></canvas>
+    <div id="countdown">3</div>
+    <div id="flash"></div>
     <div class="overlay-tip" id="tip">Align your face, then tap <b>Take Photo</b></div>
   </div>
 
-  <!-- thumbnails -->
   <div class="frame-list" id="frameList"></div>
 
   <div class="controls" id="mainControls">
@@ -88,7 +99,6 @@
     </div>
   </div>
 
-  <!-- Preview after capture -->
   <div id="previewControls">
     <img id="previewImage" src="">
     <div class="row" style="justify-content:center;margin-top:8px;">
@@ -108,7 +118,8 @@ const frameCanvas=document.getElementById('framePreview');
 const fctx=frameCanvas.getContext('2d');
 const frameInput=document.getElementById('frameInput');
 const frameList=document.getElementById('frameList');
-const stage=document.getElementById('stage');
+const countdown=document.getElementById('countdown');
+const flash=document.getElementById('flash');
 let frames=[],currentFrameIndex=-1,stream=null,loopRun=false,resultURL="";
 
 // เปิดกล้อง
@@ -117,7 +128,7 @@ function openCamera(){
   .then(s=>{stream=s; video.srcObject=s;})
   .catch(e=>alert("เปิดกล้องไม่ได้: "+e));
 }
-// loop แสดงกรอบ
+// Loop แสดงกรอบ
 function startLoop(){
   if(loopRun) return;
   loopRun=true;
@@ -134,14 +145,12 @@ function startLoop(){
   loop();
 }
 function stopLoop(){loopRun=false;}
-
 function selectFrame(i){
   currentFrameIndex=i;
   document.querySelectorAll('.frame-thumb').forEach((el,idx)=>{
     el.classList.toggle('active',idx===i);
   });
 }
-
 frameInput.addEventListener('change',e=>{
   const files=Array.from(e.target.files);
   frames=[]; frameList.innerHTML='';
@@ -153,55 +162,3 @@ frameInput.addEventListener('change',e=>{
     const thumb=document.createElement('div');
     thumb.className='frame-thumb';
     thumb.innerHTML=`<img src="${url}">`;
-    thumb.onclick=()=>selectFrame(i);
-    frameList.appendChild(thumb);
-  });
-});
-
-document.getElementById('openCam').onclick=openCamera;
-
-// 📸 ถ่ายภาพ → พรีวิว
-document.getElementById('snap').onclick=()=>{
-  if(!frames.length){alert("ยังไม่ได้อัปโหลดกรอบ");return;}
-  const c=document.createElement('canvas');
-  c.width=video.videoWidth; c.height=video.videoHeight;
-  const ctx=c.getContext('2d');
-  ctx.drawImage(video,0,0);
-  if(frames[currentFrameIndex]) ctx.drawImage(frames[currentFrameIndex],0,0,c.width,c.height);
-  resultURL=c.toDataURL('image/png');
-  stopLoop();
-  video.style.display='none';
-  frameCanvas.style.display='none';
-  document.getElementById('tip').style.display='none';
-  document.getElementById('mainControls').style.display='none';
-  const preview=document.getElementById('previewImage');
-  preview.src=resultURL;
-  document.getElementById('previewControls').style.display='block';
-};
-
-// ✅ ดาวน์โหลดภาพ
-document.getElementById('download').onclick=()=>{
-  const a=document.createElement('a');
-  a.href=resultURL;
-  a.download="rvc101-photo.png";
-  a.click();
-  document.getElementById('qrcode').innerHTML='';
-  new QRCode(document.getElementById('qrcode'), resultURL);
-};
-
-// 🔁 ถ่ายใหม่
-document.getElementById('again').onclick=()=>{
-  document.getElementById('previewControls').style.display='none';
-  video.style.display='block';
-  frameCanvas.style.display='block';
-  document.getElementById('mainControls').style.display='block';
-  document.getElementById('tip').style.display='block';
-  document.getElementById('qrcode').innerHTML='';
-  openCamera();
-  startLoop();
-};
-
-document.getElementById('retake').onclick=()=>{openCamera();startLoop();}
-</script>
-</body>
-</html>
