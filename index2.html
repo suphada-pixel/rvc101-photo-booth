@@ -1,916 +1,177 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="th">
- <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RVC Smart Career Photo Booth</title>
-  <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet">
-  <style>
-        body {
-            box-sizing: border-box;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RVC101 Photo Booth PRO v2</title>
+<style>
+  :root{
+    --bg:#0b0f1a; --card:#12172a; --muted:#2a3354; --text:#e8edff; --accent:#6ee7ff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,TH Sarabun New,Arial;
+    color:var(--text);
+    background:radial-gradient(1200px 600px at 70% -10%,#122,transparent), var(--bg);
+    display:flex; min-height:100vh; align-items:center; justify-content:center; padding:18px;
+  }
+  .app{
+    width:100%; max-width:820px;
+    background:var(--card); border:1px solid #1e2540;
+    border-radius:20px; padding:20px;
+    box-shadow:0 10px 40px rgba(0,0,0,.6);
+  }
+  h1{text-align:center; font-size:22px; margin:0 0 14px;}
+  .stage{
+    position:relative; border-radius:16px; overflow:hidden;
+    background:#000; display:flex; align-items:center; justify-content:center;
+    width:100%; height:480px;
+  }
+  video, canvas{
+    position:absolute; inset:0; width:100%; height:100%;
+    object-fit:contain; /* ✅ ทำให้เห็นกรอบเต็ม ไม่ครอป */
+  }
+  #framePreview{z-index:10; opacity:0.95; pointer-events:none;}
+  .overlay-tip{
+    position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,.6);
+    padding:4px 8px; border-radius:8px; font-size:13px; z-index:11;
+  }
+  .controls{display:grid; gap:10px; margin-top:16px;}
+  .row{display:flex; gap:8px; flex-wrap:wrap; justify-content:center;}
+  button,label.btn{
+    border:none; cursor:pointer; padding:12px 16px;
+    border-radius:12px; font-weight:600; letter-spacing:.2px;
+    color:#001018; background:linear-gradient(180deg,var(--accent),#4ad1f0);
+    box-shadow:0 6px 16px rgba(78,221,255,.28);
+    transition:transform .06s ease;
+  }
+  button.ghost,label.btn.ghost{background:#1b2240; color:#d6ddff;}
+  button:active,label.btn:active{transform:translateY(1px);}
+  input[type=file]{display:none}
+  .frame-list{
+    display:flex; overflow-x:auto; gap:10px; margin-top:10px; padding:6px 2px;
+  }
+  .frame-thumb{
+    flex:0 0 auto; width:100px; height:60px; border-radius:10px;
+    border:2px solid transparent; cursor:pointer; overflow:hidden; position:relative;
+    transition:transform .15s;
+  }
+  .frame-thumb:hover{transform:scale(1.05);}
+  .frame-thumb img{width:100%; height:100%; object-fit:cover;}
+  .frame-thumb.active{border-color:#6ee7ff;}
+  #qrcode canvas{width:160px!important; height:160px!important;}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>📸 RVC101 E-Sports Challenge 2025 – Photo Booth PRO v2</h1>
 
-        body {
-            font-family: 'Kanit', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100%;
-            color: #333;
-        }
+  <div class="stage" id="stage">
+    <video id="video" autoplay playsinline muted></video>
+    <canvas id="framePreview"></canvas>
+    <div class="overlay-tip">Align your face, then tap <b>Take Photo</b></div>
+  </div>
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+  <!-- thumbnails -->
+  <div class="frame-list" id="frameList"></div>
 
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-            position: relative;
-        }
-
-        .logo {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 80px;
-            height: 80px;
-            background: #fff;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: #7b3fe4;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        }
-
-        .title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: #fff;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-            margin-bottom: 10px;
-        }
-
-        .subtitle {
-            font-size: 1.2rem;
-            color: #f0f0f0;
-            font-weight: 400;
-        }
-
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-bottom: 30px;
-        }
-
-        .camera-section {
-            background: rgba(255,255,255,0.95);
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-
-        .frame-section {
-            background: rgba(255,255,255,0.95);
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-
-        .section-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #7b3fe4;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        #video {
-            width: 100%;
-            max-width: 400px;
-            height: 225px; /* 16:9 aspect ratio (400 * 9/16 = 225) */
-            border-radius: 15px;
-            object-fit: cover;
-            background: #f0f0f0;
-            display: block;
-            margin: 0 auto 20px;
-        }
-
-        .btn {
-            background: linear-gradient(45deg, #7b3fe4, #667eea);
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 25px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: 'Kanit', sans-serif;
-            box-shadow: 0 4px 15px rgba(123, 63, 228, 0.3);
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(123, 63, 228, 0.4);
-        }
-
-        .btn:active {
-            transform: translateY(0);
-        }
-
-        .btn-full {
-            width: 100%;
-            margin-bottom: 15px;
-        }
-
-        .frame-selector {
-            margin-bottom: 20px;
-        }
-
-        .frame-selector label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #555;
-        }
-
-        .frame-buttons {
-            display: grid;
-            gap: 15px;
-            margin-top: 10px;
-        }
-
-        .frame-btn {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 12px;
-            background: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: 'Kanit', sans-serif;
-            font-size: 0.95rem;
-            text-align: left;
-            width: 100%;
-        }
-
-        .frame-btn:hover {
-            border-color: #7b3fe4;
-            background: #f8f9ff;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(123, 63, 228, 0.15);
-        }
-
-        .frame-btn.active {
-            border-color: #7b3fe4;
-            background: linear-gradient(45deg, #7b3fe4, #667eea);
-            color: white;
-            box-shadow: 0 4px 15px rgba(123, 63, 228, 0.3);
-        }
-
-        .frame-btn.active:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(123, 63, 228, 0.4);
-        }
-
-        .frame-preview-mini {
-            width: 60px;
-            height: 34px;
-            border-radius: 6px;
-            border: 2px solid #ddd;
-            flex-shrink: 0;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .frame-btn.active .frame-preview-mini {
-            border-color: rgba(255,255,255,0.5);
-        }
-
-
-
-        .no-frame-preview {
-            background: #f8f9fa;
-            position: relative;
-        }
-
-        .no-frame-preview::after {
-            content: '○';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            color: #666;
-            font-size: 18px;
-        }
-
-        .frame-btn.active .no-frame-preview::after {
-            color: white;
-        }
-
-        .upload-section {
-            margin-bottom: 20px;
-            padding: 20px;
-            border: 2px dashed #7b3fe4;
-            border-radius: 15px;
-            text-align: center;
-        }
-
-        .upload-input {
-            display: none;
-        }
-
-        .upload-label {
-            display: inline-block;
-            padding: 10px 20px;
-            background: #f8f9fa;
-            border: 2px solid #7b3fe4;
-            border-radius: 10px;
-            cursor: pointer;
-            color: #7b3fe4;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .upload-label:hover {
-            background: #7b3fe4;
-            color: white;
-        }
-
-        .uploaded-frames {
-            margin-top: 15px;
-        }
-
-        .frame-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            background: #f8f9fa;
-            border-radius: 8px;
-            margin-bottom: 8px;
-        }
-
-        .frame-name {
-            font-size: 0.9rem;
-            color: #555;
-        }
-
-        .delete-btn {
-            background: #dc3545;
-            color: white;
-            border: none;
-            padding: 4px 8px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.8rem;
-        }
-
-        .result-section {
-            background: rgba(255,255,255,0.95);
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            text-align: center;
-            margin-bottom: 30px;
-            display: none;
-        }
-
-        #canvas {
-            max-width: 100%;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        .qr-section {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 30px;
-            margin: 20px 0;
-        }
-
-        #qrcode {
-            border: 3px solid #7b3fe4;
-            border-radius: 15px;
-            padding: 10px;
-            background: white;
-        }
-
-        .success-message {
-            background: linear-gradient(45deg, #28a745, #20c997);
-            color: white;
-            padding: 15px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            font-size: 1.1rem;
-            font-weight: 500;
-        }
-
-        .footer {
-            background: rgba(255,255,255,0.95);
-            border-radius: 20px;
-            padding: 25px;
-            text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        }
-
-        .footer-content {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-
-        .developer-info {
-            flex: 1;
-            text-align: left;
-        }
-
-        .footer-logo {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .rvc-logo {
-            width: 60px;
-            height: 60px;
-            background: #7b3fe4;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: bold;
-        }
-
-        .website-qr {
-            width: 80px;
-            height: 80px;
-            background: #f0f0f0;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.8rem;
-            color: #666;
-        }
-
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #7b3fe4;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @media (max-width: 768px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-            
-            .title {
-                font-size: 2rem;
-            }
-            
-            .logo {
-                position: static;
-                margin: 0 auto 20px;
-            }
-            
-            .qr-section {
-                flex-direction: column;
-                gap: 20px;
-            }
-            
-            .footer-content {
-                flex-direction: column;
-                text-align: center;
-            }
-            
-            .developer-info {
-                text-align: center;
-            }
-        }
-    </style>
-  <style>@view-transition { navigation: auto; }</style>
-  <script src="/_sdk/data_sdk.js" type="text/javascript"></script>
-  <script src="/_sdk/element_sdk.js" type="text/javascript"></script>
-  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
- </head>
- <body>
-  <div class="container">
-   <header class="header">
-    <div class="logo">
-     RVC
+  <div class="controls">
+    <div class="row">
+      <label for="frameInput" class="btn ghost">🖼️ Upload Frames</label>
+      <button id="openCam" class="ghost">🎥 Open Camera</button>
     </div>
-    <h1 class="title">RVC Smart Career Photo Booth</h1>
-    <p class="subtitle">ถ่ายรูปตามธีมสาขาอาชีพ สแกน QR โหลดภาพได้ทันที!</p>
-   </header>
-   <div class="main-content">
-    <div class="camera-section">
-     <h2 class="section-title">📷 กล้องถ่ายภาพ</h2>
-     <video id="video" autoplay muted playsinline></video><button id="startCamera" class="btn btn-full">เปิดกล้อง</button> <button id="captureBtn" class="btn btn-full" disabled>ถ่ายภาพ</button>
+    <div class="row">
+      <button id="snap">📷 Take Photo</button>
+      <button id="retake" class="ghost">↩️ Retake</button>
     </div>
-    <div class="frame-section">
-     <h2 class="section-title">🖼️ เลือกกรอบธีม</h2>
-     <div class="frame-selector"><label>เลือกธีมกรอบ:</label>
-      <div class="frame-buttons"><button class="frame-btn active" data-frame="">
-        <div class="frame-preview-mini no-frame-preview"></div><span>ไม่ใช้กรอบ</span> </button>
-      </div>
-     </div>
-     <div class="upload-section">
-      <p style="margin-bottom: 10px;">หรืออัพโหลดกรอบของคุณเอง</p><label for="frameUpload" class="upload-label"> 📁 เลือกไฟล์กรอบ (PNG) </label> <input type="file" id="frameUpload" class="upload-input" multiple accept="image/png,image/jpeg">
-      <div id="uploadedFrames" class="uploaded-frames"></div>
-     </div>
+    <div class="row">
+      <button id="download" disabled>⬇️ Download & QR</button>
+      <button id="share" class="ghost" disabled>🔗 Share</button>
     </div>
-   </div>
-   <div class="loading" id="loading">
-    <div class="spinner"></div>
-    <p>กำลังประมวลผลภาพ...</p>
-   </div>
-   <div class="result-section" id="resultSection">
-    <div class="success-message">
-     🎉 เยี่ยมเลย! ถ่ายภาพสำเร็จ
-    </div>
-    <canvas id="canvas"></canvas>
-    <div class="qr-section">
-     <div>
-      <h3>สแกน QR เพื่อดาวน์โหลด</h3>
-      <div id="qrcode"></div>
-     </div>
-     <div><button id="downloadBtn" class="btn">💾 ดาวน์โหลดภาพ</button> <br><br><button id="retakeBtn" class="btn">📷 ถ่ายใหม่</button>
-     </div>
-    </div>
-   </div>
-   <footer class="footer">
-    <div class="footer-content">
-     <div class="developer-info">
-      <p><strong>พัฒนาโดย:</strong> นางสาวสุภาดา คำตา</p>
-      <p>(แผนกเทคโนโลยีสารสนเทศ)</p>
-      <p>วิทยาลัยอาชีวศึกษาร้อยเอ็ด</p>
-     </div>
-     <div class="footer-logo">
-      <div class="rvc-logo">
-       RVC
-      </div>
-      <div class="website-qr">
-       <div style="font-size: 0.7rem; text-align: center;">
-        QR Code<br>
-        เว็บไซต์หลัก
-       </div>
-      </div>
-     </div>
-    </div>
-   </footer>
-  </div><!-- QR Code Library -->
-  <script>
-        // QR Code generation library (embedded)
-        !function(r,n){"object"==typeof exports&&"undefined"!=typeof module?module.exports=n():"function"==typeof define&&define.amd?define(n):(r=r||self).QRCode=n()}(this,function(){"use strict";function r(r,n,t,e){var o,i,u=-1,f=r.length;for(e&&(e=0),t<0&&(t+=f);++u<f;)r[e=(e+1)%f]=r[e]^n[u%n.length]^(t+u&255);return r}function n(r,n){var t,e=new Array(r);for(t=0;t<r;t+=1)e[t]=n;return e}function t(r,n){var t,e,o=r.length,i=0;for(t=0;t<o;t+=1)i=(i+r[t]*Math.pow(n,o-t-1))%255;return i}function e(r,n){var t,e=r.length;for(t=0;t<e;t+=1)r[t]=r[t]^n[t%n.length];return r}var o=function(){var r=function(r,n){return(o=Object.setPrototypeOf||{__proto__:[]}instanceof Array&&function(r,n){r.__proto__=n}||function(r,n){for(var t in n)n.hasOwnProperty(t)&&(r[t]=n[t])})(r,n)};return function(n,t){function e(){this.constructor=n}r(n,t),n.prototype=null===t?Object.create(t):(e.prototype=t.prototype,new e)}}(),i=function(){return(i=Object.assign||function(r){for(var n,t=1,e=arguments.length;t<e;t++)for(var o in n=arguments[t])Object.prototype.hasOwnProperty.call(n,o)&&(r[o]=n[o]);return r}).apply(this,arguments)},u=function(r){function n(n,t){var e=r.call(this,n)||this;return e.name="QRCodeException",e.code=t,e}return o(n,r),n}(Error),f=function(){function r(r,n,t,e){this.typeNumber=r,this.errorCorrectLevel=n,this.modules=null,this.moduleCount=0,this.dataCache=null,this.dataList=new Array,this.dataList.push(new s(t,e)),this.make()}return r.prototype.make=function(){this.makeImpl(!1,this.getBestMaskPattern())},r.prototype.makeImpl=function(r,n){this.moduleCount=4*this.typeNumber+17,this.modules=new Array(this.moduleCount);for(var t=0;t<this.moduleCount;t++){this.modules[t]=new Array(this.moduleCount);for(var e=0;e<this.moduleCount;e++)this.modules[t][e]=null}this.setupPositionProbePattern(0,0),this.setupPositionProbePattern(this.moduleCount-7,0),this.setupPositionProbePattern(0,this.moduleCount-7),this.setupPositionAdjustPattern(),this.setupTimingPattern(),this.setupTypeInfo(r,n),this.typeNumber>=7&&this.setupTypeNumber(r),null==this.dataCache&&(this.dataCache=c.createData(this.typeNumber,this.errorCorrectLevel,this.dataList)),this.mapData(this.dataCache,n)},r.prototype.setupPositionProbePattern=function(r,n){for(var t=-1;t<=7;t++)if(!(r+t<=-1||this.moduleCount<=r+t))for(var e=-1;e<=7;e++)n+e<=-1||this.moduleCount<=n+e||(this.modules[r+t][n+e]=0<=t&&t<=6&&(0==e||6==e)||0<=e&&e<=6&&(0==t||6==t)||2<=t&&t<=4&&2<=e&&e<=4)},r.prototype.getBestMaskPattern=function(){for(var r=0,n=0,t=0;t<8;t++){this.makeImpl(!0,t);var e=a.getLostPoint(this);(0==t||r>e)&&(r=e,n=t)}return n},r.prototype.createMovieClip=function(r,n,t){var e=r.createEmptyMovieClip(n,t);this.make();for(var o=0;o<this.modules.length;o++)for(var i=1*o,u=0;u<this.modules[o].length;u++){var f=1*u;this.modules[o][u]&&(e.beginFill(0,100),e.moveTo(f,i),e.lineTo(f+1,i),e.lineTo(f+1,i+1),e.lineTo(f,i+1),e.endFill())}return e},r.prototype.setupTimingPattern=function(){for(var r=8;r<this.moduleCount-8;r++)null==this.modules[r][6]&&(this.modules[r][6]=r%2==0);for(var n=8;n<this.moduleCount-8;n++)null==this.modules[6][n]&&(this.modules[6][n]=n%2==0)},r.prototype.setupPositionAdjustPattern=function(){for(var r=a.getPatternPosition(this.typeNumber),n=0;n<r.length;n++)for(var t=0;t<r.length;t++){var e=r[n],o=r[t];if(null==this.modules[e][o])for(var i=-2;i<=2;i++)for(var u=-2;u<=2;u++)this.modules[e+i][o+u]=-2==i||2==i||-2==u||2==u||0==i&&0==u}},r.prototype.setupTypeNumber=function(r){for(var n=a.getBCHTypeNumber(this.typeNumber),t=0;t<18;t++){var e=!r&&1==(n>>t&1);this.modules[Math.floor(t/3)][t%3+this.moduleCount-8-3]=e}for(t=0;t<18;t++){e=!r&&1==(n>>t&1);this.modules[t%3+this.moduleCount-8-3][Math.floor(t/3)]=e}},r.prototype.setupTypeInfo=function(r,n){for(var t=this.errorCorrectLevel<<3|n,e=a.getBCHTypeInfo(t),o=0;o<15;o++){var i=!r&&1==(e>>o&1);o<6?this.modules[o][8]=i:o<8?this.modules[o+1][8]=i:this.modules[this.moduleCount-15+o][8]=i}for(o=0;o<15;o++){i=!r&&1==(e>>o&1);o<8?this.modules[8][this.moduleCount-o-1]=i:o<9?this.modules[8][15-o-1+1]=i:this.modules[8][15-o-1]=i}this.modules[this.moduleCount-8][8]=!r},r.prototype.mapData=function(r,n){for(var t=-1,e=this.moduleCount-1,o=7,i=0,u=this.moduleCount-1;u>0;u-=2)for(6==u&&u--;;){for(var f=0;f<2;f++)if(null==this.modules[e][u-f]){var l=!1;i<r.length&&(l=1==(r[i]>>>o&1)),a.getMask(n,e,u-f)&&(l=!l),this.modules[e][u-f]=l,-1==--o&&(i++,o=7)}if((e+=t)<0||this.moduleCount<=e){e-=t,t=-t;break}}},r}(),l=function(){function r(r,n){this.totalCount=r,this.dataCount=n}return r}(),s=function(){function r(r,n){this.mode=h.MODE_8BIT_BYTE,this.data=n,this.parsedData=[];for(var t=0,e=this.data.length;t<e;t++){var o=[],i=this.data.charCodeAt(t);i>65536?(o[0]=240|(1835008&i)>>>18,o[1]=128|(258048&i)>>>12,o[2]=128|(4032&i)>>>6,o[3]=128|63&i):i>2048?(o[0]=224|(61440&i)>>>12,o[1]=128|(4032&i)>>>6,o[2]=128|63&i):i>128?(o[0]=192|(1984&i)>>>6,o[1]=128|63&i):o[0]=i,this.parsedData.push(o)}this.parsedData=Array.prototype.concat.apply([],this.parsedData),this.parsedData.length!=this.data.length&&(this.parsedData.unshift(191),this.parsedData.unshift(187),this.parsedData.unshift(239))}return r.prototype.getLength=function(){return this.parsedData.length},r.prototype.write=function(r){for(var n=0,t=this.parsedData.length;n<t;n++)r.put(this.parsedData[n],8)},r}(),h=function(){function r(){}return r.MODE_NUMBER=1,r.MODE_ALPHA_NUM=2,r.MODE_8BIT_BYTE=4,r.MODE_KANJI=8,r}(),d=function(){function r(){this.buffer=[],this.length=0}return r.prototype.get=function(r){var n=Math.floor(r/8);return 1==(this.buffer[n]>>>7-r%8&1)},r.prototype.put=function(r,n){for(var t=0;t<n;t++)this.putBit(1==(r>>>n-t-1&1))},r.prototype.getLengthInBits=function(){return this.length},r.prototype.putBit=function(r){var n=Math.floor(this.length/8);this.buffer.length<=n&&this.buffer.push(0),r&&(this.buffer[n]|=128>>>this.length%8),this.length++},r}(),c=function(){function r(){}return r.createData=function(r,n,t){for(var e=l.getRSBlocks(r,n),o=new d,i=0;i<t.length;i++){var u=t[i];o.put(u.mode,4),o.put(u.getLength(),a.getLengthInBits(u.mode,r)),u.write(o)}var f=0;for(i=0;i<e.length;i++)f+=e[i].dataCount;if(o.getLengthInBits()>8*f)throw new Error("code length overflow. ("+o.getLengthInBits()+">"+8*f+")");for(o.getLengthInBits()+4<=8*f&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=8*f||(o.put(236,8),o.getLengthInBits()>=8*f));)o.put(17,8);return r.createBytes(o,e)},r.createBytes=function(r,o){for(var i=0,u=0,f=0,l=new Array(o.length),s=new Array(o.length),h=0;h<o.length;h++){var d=o[h].dataCount,c=o[h].totalCount-d;u=Math.max(u,d),f=Math.max(f,c),l[h]=new Array(d);for(var g=0;g<l[h].length;g++)l[h][g]=255&r.buffer[g+i];i+=d;var v=a.getErrorCorrectPolynomial(c),m=new p(l[h],v.getLength()-1).mod(v);s[h]=new Array(v.getLength()-1);for(g=0;g<s[h].length;g++){var C=g+m.getLength()-s[h].length;s[h][g]=C>=0?m.get(C):0}}var w=0;for(g=0;g<o.length;g++)w+=o[g].totalCount;var y=new Array(w),A=0;for(g=0;g<u;g++)for(h=0;h<o.length;h++)g<l[h].length&&(y[A++]=l[h][g]);for(g=0;g<f;g++)for(h=0;h<o.length;h++)g<s[h].length&&(y[A++]=s[h][g]);return y},r}(),g={PATTERN_POSITION_TABLE:[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],G15:1335,G18:7973,G15_MASK:21522,getBCHTypeInfo:function(r){for(var n=r<<10;g.getBCHDigit(n)-g.getBCHDigit(g.G15)>=0;)n^=g.G15<<g.getBCHDigit(n)-g.getBCHDigit(g.G15);return(r<<10|n)^g.G15_MASK},getBCHTypeNumber:function(r){for(var n=r<<12;g.getBCHDigit(n)-g.getBCHDigit(g.G18)>=0;)n^=g.G18<<g.getBCHDigit(n)-g.getBCHDigit(g.G18);return r<<12|n},getBCHDigit:function(r){for(var n=0;0!=r;)n++,r>>>=1;return n},getPatternPosition:function(r){return g.PATTERN_POSITION_TABLE[r-1]},getMask:function(r,n,t){switch(r){case 0:return(n+t)%2==0;case 1:return n%2==0;case 2:return t%3==0;case 3:return(n+t)%3==0;case 4:return(Math.floor(n/2)+Math.floor(t/3))%2==0;case 5:return n*t%2+n*t%3==0;case 6:return(n*t%2+n*t%3)%2==0;case 7:return(n*t%3+(n+t)%2)%2==0;default:throw new Error("bad maskPattern:"+r)}},getErrorCorrectPolynomial:function(r){for(var n=new p([1],0),t=0;t<r;t++)n=n.multiply(new p([1,v.gexp(t)],0));return n},getLengthInBits:function(r,n){if(1<=n&&n<10)switch(r){case h.MODE_NUMBER:return 10;case h.MODE_ALPHA_NUM:return 9;case h.MODE_8BIT_BYTE:return 8;case h.MODE_KANJI:return 8;default:throw new Error("mode:"+r)}else if(n<27)switch(r){case h.MODE_NUMBER:return 12;case h.MODE_ALPHA_NUM:return 11;case h.MODE_8BIT_BYTE:return 16;case h.MODE_KANJI:return 10;default:throw new Error("mode:"+r)}else{if(!(n<41))throw new Error("type:"+n);switch(r){case h.MODE_NUMBER:return 14;case h.MODE_ALPHA_NUM:return 13;case h.MODE_8BIT_BYTE:return 16;case h.MODE_KANJI:return 12;default:throw new Error("mode:"+r)}}},getLostPoint:function(r){for(var n=r.getModuleCount(),t=0,e=0;e<n;e++)for(var o=0;o<n;o++){for(var i=0,u=r.isDark(e,o),f=-1;f<=1;f++)if(!(e+f<0||n<=e+f))for(var l=-1;l<=1;l++)o+l<0||n<=o+l||0==f&&0==l||u==r.isDark(e+f,o+l)&&i++;i>5&&(t+=3+i-5)}for(e=0;e<n-1;e++)for(o=0;o<n-1;o++){var s=0;r.isDark(e,o)&&s++,r.isDark(e+1,o)&&s++,r.isDark(e,o+1)&&s++,r.isDark(e+1,o+1)&&s++,0!=s&&4!=s||(t+=3)}for(e=0;e<n;e++)for(o=0;o<n-6;o++)r.isDark(e,o)&&!r.isDark(e,o+1)&&r.isDark(e,o+2)&&r.isDark(e,o+3)&&r.isDark(e,o+4)&&!r.isDark(e,o+5)&&r.isDark(e,o+6)&&(t+=40);for(o=0;o<n;o++)for(e=0;e<n-6;e++)r.isDark(e,o)&&!r.isDark(e+1,o)&&r.isDark(e+2,o)&&r.isDark(e+3,o)&&r.isDark(e+4,o)&&!r.isDark(e+5,o)&&r.isDark(e+6,o)&&(t+=40);var h=0;for(o=0;o<n;o++)for(e=0;e<n;e++)r.isDark(e,o)&&h++;return t+=10*(Math.abs(100*h/n/n-50)/5)},getModuleCount:function(){return this.moduleCount},isDark:function(r,n){return this.modules[r][n]}},a=g,v=function(){function r(){}return r.glog=function(n){if(n<1)throw new Error("glog("+n+")");return r.LOG_TABLE[n]},r.gexp=function(n){for(;n<0;)n+=255;for(;n>=256;)n-=255;return r.EXP_TABLE[n]},r.EXP_TABLE=new Array(256),r.LOG_TABLE=new Array(256),r}();for(var m=0;m<8;m++)v.EXP_TABLE[m]=1<<m;for(m=8;m<256;m++)v.EXP_TABLE[m]=v.EXP_TABLE[m-4]^v.EXP_TABLE[m-5]^v.EXP_TABLE[m-6]^v.EXP_TABLE[m-8];for(m=0;m<255;m++)v.LOG_TABLE[v.EXP_TABLE[m]]=m;var p=function(){function r(r,n){if(null==r.length)throw new Error(r.length+"/"+n);for(var t=0;t<r.length&&0==r[t];)t++;this.num=new Array(r.length-t+n);for(var e=0;e<r.length-t;e++)this.num[e]=r[e+t]}return r.prototype.get=function(r){return this.num[r]},r.prototype.getLength=function(){return this.num.length},r.prototype.multiply=function(n){for(var t=new Array(this.getLength()+n.getLength()-1),e=0;e<this.getLength();e++)for(var o=0;o<n.getLength();o++)t[e+o]^=v.gexp(v.glog(this.get(e))+v.glog(n.get(o)));return new r(t,0)},r.prototype.mod=function(n){if(this.getLength()-n.getLength()<0)return this;for(var t=v.glog(this.get(0))-v.glog(n.get(0)),e=new Array(this.getLength()),o=0;o<this.getLength();o++)e[o]=this.get(o);for(o=0;o<n.getLength();o++)e[o]^=v.gexp(v.glog(n.get(o))+t);return new r(e,0).mod(n)},r}();l.getRSBlocks=function(r,n){var t=l.getRsBlockTable(r,n);if(null==t)throw new Error("bad rs block @ typeNumber:"+r+"/errorCorrectLevel:"+n);for(var e=t.length/3,o=[],i=0;i<e;i++)for(var u=t[3*i+0],f=t[3*i+1],s=t[3*i+2],h=0;h<u;h++)o.push(new l(f,s));return o},l.getRsBlockTable=function(r,n){switch(n){case 1:return l.RS_BLOCK_TABLE[4*(r-1)+0];case 0:return l.RS_BLOCK_TABLE[4*(r-1)+1];case 3:return l.RS_BLOCK_TABLE[4*(r-1)+2];case 2:return l.RS_BLOCK_TABLE[4*(r-1)+3];default:return}},l.RS_BLOCK_TABLE=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]];var C=function(){function r(r,n){this.errorCorrectLevel=n,this.parsedData=null,this.isDark=g.isDark,this.moduleCount=g.getModuleCount,this.addData(r),this.make()}return r.prototype.addData=function(r){this.parsedData=new s(r,this.errorCorrectLevel),this.dataCache=null},r.prototype.isDark=function(r,n){return this.modules[r][n]},r.prototype.getModuleCount=function(){return this.moduleCount},r.prototype.make=function(){if(this.typeNumber<1){for(var r=1;r<40;r++){for(var n=l.getRSBlocks(r,this.errorCorrectLevel),t=new d,e=0;e<n.length;e++)t.put(4,4),t.put(this.parsedData.getLength(),g.getLengthInBits(4,r)),this.parsedData.write(t);var o=0;for(e=0;e<n.length;e++)o+=n[e].dataCount;if(t.getLengthInBits()<=8*o)break}this.typeNumber=r}this.makeImpl(!1,this.getBestMaskPattern())},r.prototype.makeImpl=function(r,n){this.moduleCount=4*this.typeNumber+17,this.modules=new Array(this.moduleCount);for(var t=0;t<this.moduleCount;t++){this.modules[t]=new Array(this.moduleCount);for(var e=0;e<this.moduleCount;e++)this.modules[t][e]=null}this.setupPositionProbePattern(0,0),this.setupPositionProbePattern(this.moduleCount-7,0),this.setupPositionProbePattern(0,this.moduleCount-7),this.setupPositionAdjustPattern(),this.setupTimingPattern(),this.setupTypeInfo(r,n),this.typeNumber>=7&&this.setupTypeNumber(r),null==this.dataCache&&(this.dataCache=c.createData(this.typeNumber,this.errorCorrectLevel,[this.parsedData])),this.mapData(this.dataCache,n)},r.prototype.setupPositionProbePattern=function(r,n){for(var t=-1;t<=7;t++)if(!(r+t<=-1||this.moduleCount<=r+t))for(var e=-1;e<=7;e++)n+e<=-1||this.moduleCount<=n+e||(this.modules[r+t][n+e]=0<=t&&t<=6&&(0==e||6==e)||0<=e&&e<=6&&(0==t||6==t)||2<=t&&t<=4&&2<=e&&e<=4)},r.prototype.getBestMaskPattern=function(){for(var r=0,n=0,t=0;t<8;t++){this.makeImpl(!0,t);var e=g.getLostPoint(this);(0==t||r>e)&&(r=e,n=t)}return n},r.prototype.setupTimingPattern=function(){for(var r=8;r<this.moduleCount-8;r++)null==this.modules[r][6]&&(this.modules[r][6]=r%2==0);for(var n=8;n<this.moduleCount-8;n++)null==this.modules[6][n]&&(this.modules[6][n]=n%2==0)},r.prototype.setupPositionAdjustPattern=function(){for(var r=g.getPatternPosition(this.typeNumber),n=0;n<r.length;n++)for(var t=0;t<r.length;t++){var e=r[n],o=r[t];if(null==this.modules[e][o])for(var i=-2;i<=2;i++)for(var u=-2;u<=2;u++)this.modules[e+i][o+u]=-2==i||2==i||-2==u||2==u||0==i&&0==u}},r.prototype.setupTypeNumber=function(r){for(var n=g.getBCHTypeNumber(this.typeNumber),t=0;t<18;t++){var e=!r&&1==(n>>t&1);this.modules[Math.floor(t/3)][t%3+this.moduleCount-8-3]=e}for(t=0;t<18;t++){e=!r&&1==(n>>t&1);this.modules[t%3+this.moduleCount-8-3][Math.floor(t/3)]=e}},r.prototype.setupTypeInfo=function(r,n){for(var t=this.errorCorrectLevel<<3|n,e=g.getBCHTypeInfo(t),o=0;o<15;o++){var i=!r&&1==(e>>o&1);o<6?this.modules[o][8]=i:o<8?this.modules[o+1][8]=i:this.modules[this.moduleCount-15+o][8]=i}for(o=0;o<15;o++){i=!r&&1==(e>>o&1);o<8?this.modules[8][this.moduleCount-o-1]=i:o<9?this.modules[8][15-o-1+1]=i:this.modules[8][15-o-1]=i}this.modules[this.moduleCount-8][8]=!r},r.prototype.mapData=function(r,n){for(var t=-1,e=this.moduleCount-1,o=7,i=0,u=this.moduleCount-1;u>0;u-=2)for(6==u&&u--;;){for(var f=0;f<2;f++)if(null==this.modules[e][u-f]){var l=!1;i<r.length&&(l=1==(r[i]>>>o&1)),g.getMask(n,e,u-f)&&(l=!l),this.modules[e][u-f]=l,-1==--o&&(i++,o=7)}if((e+=t)<0||this.moduleCount<=e){e-=t,t=-t;break}}},r.prototype.createImgTag=function(r,n,t){r=r||2,n=n||4*r;var e=this.getModuleCount()*r+2*n,o=n,i=e-n;return this.createSvgTag(r,n,t).replace("<svg",'<img src="data:image/svg+xml;base64,'+btoa('<svg xmlns="http://www.w3.org/2000/svg"')+'" width="'+e+'" height="'+e+'" ').replace(/<\/svg>/,"")},r.prototype.createSvgTag=function(r,n,t){r=r||2,n=n||4*r,t=void 0===t?"#000":"#fff"===t?null:t;var e=this.getModuleCount()*r+2*n,o="",i="l"+r+",0 0,"+r+" -"+r+",0 0,-"+r+"z ";if(t)for(var u=0;u<this.getModuleCount();u++)for(var f=0;f<this.getModuleCount();f++)this.isDark(u,f)&&(o+="M"+(f*r+n)+","+(u*r+n)+i);else for(u=0;u<this.getModuleCount();u++)for(f=0;f<this.getModuleCount();f++)this.isDark(u,f)||(o+="M"+(f*r+n)+","+(u*r+n)+i);return'<svg xmlns="http://www.w3.org/2000/svg" width="'+e+'" height="'+e+'" viewBox="0 0 '+e+" "+e+'"><path '+(t?'fill="'+t+'"':'fill="#000"')+'d="'+o+'"/></svg>'},r.prototype.createTableTag=function(r,n){r=r||2;var t="",e=this.getModuleCount(),o='<table style="border:0;border-collapse:collapse;">';for(t+='<tbody style="border:0;border-collapse:collapse;">',t+='<tr style="border:0;border-collapse:collapse;height:'+r+'px">',t+='<td style="border:0;border-collapse:collapse;width:'+r*e+"px;background:"+(n||"#fff")+'"></td>',t+="</tr>",t+='<tr style="border:0;border-collapse:collapse;height:'+r+'px">',t+='<td style="border:0;border-collapse:collapse;width:'+r+'px;background:'+(n||"#fff")+'"></td>',t+='<td style="border:0;border-collapse:collapse;">',t+='<table style="border:0;border-collapse:collapse;">',t+='<tbody style="border:0;border-collapse:collapse;">',i=0;i<e;i++){for(t+='<tr style="border:0;border-collapse:collapse;height:'+r+'px">',u=0;u<e;u++)t+='<td style="border:0;border-collapse:collapse;width:'+r+"px;background:"+(this.isDark(i,u)?"#000":n||"#fff")+'"></td>';t+="</tr>"}var u;for(t+="</tbody>",t+="</table>",t+="</td>",t+='<td style="border:0;border-collapse:collapse;width:'+r+'px;background:'+(n||"#fff")+'"></td>',t+="</tr>",t+='<tr style="border:0;border-collapse:collapse;height:'+r+'px">',t+='<td style="border:0;border-collapse:collapse;width:'+r*e+"px;background:"+(n||"#fff")+'"></td>',t+="</tr>",t+="</tbody>",t+="</table>";)return o+t},r.prototype.createASCII=function(r,n){if((r=r||1)<2)return this.createUnicodeASCII(r,n);--r;var t="",e=this.getModuleCount(),o=Array(r+1).join("██"),i=Array(r+1).join("  "),u=Array(2*r+1).join("█");for(t+=u+"\n",f=0;f<e;f++){for(t+="█"+Array(r+1).join(" "),l=0;l<e;l++)t+=this.isDark(f,l)?o:i;t+=Array(r+1).join(" ")+"█\n"}var f,l;return t+=u+"\n"},r.prototype.createUnicodeASCII=function(r,n){r=r||1,n=void 0!==n?n:2;var t="",e=this.getModuleCount(),o=!1,i=Math.floor((n-1)/2),u=Array(e+2*i+2).join("█");for(t+=u+"\n",f=0;f<e;f++){for(t+="█"+Array(i+1).join(o?"█":" "),l=0;l<e;l++){var f,l,s=this.isDark(f,l);1===r?t+=s?"██":"  ":t+=s?"█":" "}t+=Array(i+1).join(o?"█":" ")+"█\n"}return t+=u+"\n"},r}();return C.ErrorCorrectLevel={M:0,L:1,H:2,Q:3},C});
-    </script>
-  <script>
-        let video, canvas, ctx;
-        let currentStream = null;
-        let selectedFrame = null;
-        let uploadedFrames = [];
-        let capturedImageData = null;
+    <input id="frameInput" type="file" accept="image/png,image/*" multiple>
+    <div id="qrcode" style="text-align:center;margin-top:10px;"></div>
+  </div>
+</div>
 
-        // Built-in frame data (empty - only uploaded frames allowed)
-        const builtInFrames = {};
+<script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
+<script>
+const video=document.getElementById('video');
+const frameCanvas=document.getElementById('framePreview');
+const fctx=frameCanvas.getContext('2d');
+const frameInput=document.getElementById('frameInput');
+const frameList=document.getElementById('frameList');
+let frames=[],currentFrameIndex=-1,stream=null,loopRun=false;
 
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeElements();
-            setupEventListeners();
-        });
+// ✅ เปิดกล้อง
+function openCamera(){
+  navigator.mediaDevices.getUserMedia({video:{facingMode:"user"}})
+  .then(s=>{stream=s; video.srcObject=s;})
+  .catch(e=>alert("เปิดกล้องไม่ได้: "+e));
+}
 
-        function initializeElements() {
-            video = document.getElementById('video');
-            canvas = document.getElementById('canvas');
-            ctx = canvas.getContext('2d');
-        }
+// ✅ แสดงกรอบทับแบบเรียลไทม์
+function startLoop(){
+  if(loopRun) return;
+  loopRun=true;
+  const loop=()=>{
+    if(!loopRun) return;
+    frameCanvas.width=video.videoWidth;
+    frameCanvas.height=video.videoHeight;
+    fctx.clearRect(0,0,frameCanvas.width,frameCanvas.height);
+    if(frames[currentFrameIndex]){
+      fctx.drawImage(frames[currentFrameIndex],0,0,frameCanvas.width,frameCanvas.height);
+    }
+    requestAnimationFrame(loop);
+  };
+  loop();
+}
+function stopLoop(){loopRun=false;}
 
-        function setupEventListeners() {
-            document.getElementById('startCamera').addEventListener('click', startCamera);
-            document.getElementById('captureBtn').addEventListener('click', capturePhoto);
-            document.getElementById('frameUpload').addEventListener('change', handleFrameUpload);
-            document.getElementById('downloadBtn').addEventListener('click', downloadImage);
-            document.getElementById('retakeBtn').addEventListener('click', retakePhoto);
-            
-            // Setup frame button listeners
-            document.querySelectorAll('.frame-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    selectFrameButton(this);
-                });
-            });
-        }
+// ✅ เลือกเฟรม
+function selectFrame(i){
+  currentFrameIndex=i;
+  document.querySelectorAll('.frame-thumb').forEach((el,idx)=>{
+    el.classList.toggle('active',idx===i);
+  });
+}
 
-        async function startCamera() {
-            try {
-                const constraints = {
-                    video: {
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 },
-                        aspectRatio: 16/9,
-                        facingMode: 'user'
-                    }
-                };
+// ✅ อัปโหลดหลายเฟรม
+frameInput.addEventListener('change',e=>{
+  const files=Array.from(e.target.files);
+  frames=[]; frameList.innerHTML='';
+  files.forEach((file,i)=>{
+    const url=URL.createObjectURL(file);
+    const img=new Image();
+    img.onload=()=>{frames[i]=img; if(currentFrameIndex===-1){currentFrameIndex=0; startLoop();}}
+    img.src=url;
 
-                currentStream = await navigator.mediaDevices.getUserMedia(constraints);
-                video.srcObject = currentStream;
-                
-                document.getElementById('startCamera').disabled = true;
-                document.getElementById('captureBtn').disabled = false;
-                
-                video.addEventListener('loadedmetadata', () => {
-                    video.play();
-                    
-                    // Update frame preview when video is ready
-                    setTimeout(() => {
-                        if (selectedFrame) {
-                            showFramePreview();
-                        }
-                    }, 500);
-                });
+    // ตัวอย่าง thumbnail
+    const thumb=document.createElement('div');
+    thumb.className='frame-thumb';
+    thumb.innerHTML=`<img src="${url}">`;
+    thumb.onclick=()=>selectFrame(i);
+    frameList.appendChild(thumb);
+  });
+});
 
-            } catch (error) {
-                console.error('Error accessing camera:', error);
-                showError('ไม่สามารถเข้าถึงกล้องได้ กรุณาอนุญาตการใช้งานกล้อง');
-            }
-        }
+// ✅ ปุ่มต่าง ๆ
+document.getElementById('openCam').onclick=openCamera;
 
-        function selectFrameButton(clickedBtn) {
-            // Remove active class from all buttons
-            document.querySelectorAll('.frame-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            
-            // Add active class to clicked button
-            clickedBtn.classList.add('active');
-            
-            // Get frame value
-            const frameValue = clickedBtn.dataset.frame;
-            
-            if (frameValue) {
-                if (frameValue.startsWith('uploaded_')) {
-                    const frameId = parseInt(frameValue.replace('uploaded_', ''));
-                    const uploadedFrame = uploadedFrames.find(f => f.id === frameId);
-                    selectedFrame = uploadedFrame ? uploadedFrame.data : null;
-                } else {
-                    selectedFrame = builtInFrames[frameValue];
-                }
-                
-                // Show frame preview on video
-                showFramePreview();
-            } else {
-                selectedFrame = null;
-                clearFramePreview();
-            }
-        }
-
-        function handleFrameUpload(event) {
-            const files = event.target.files;
-            
-            for (let i = 0; i < files.length; i++) {
-                const file = files[i];
-                
-                if (file.type === 'image/png' || file.type === 'image/jpeg') {
-                    const reader = new FileReader();
-                    
-                    reader.onload = function(e) {
-                        const frameData = {
-                            name: file.name,
-                            data: e.target.result,
-                            id: Date.now() + i
-                        };
-                        
-                        uploadedFrames.push(frameData);
-                        updateUploadedFramesList();
-                        
-                        // Add to frame buttons
-                        addUploadedFrameButton(frameData);
-                    };
-                    
-                    reader.readAsDataURL(file);
-                }
-            }
-        }
-
-        function addUploadedFrameButton(frameData) {
-            const frameButtons = document.querySelector('.frame-buttons');
-            const frameBtn = document.createElement('button');
-            frameBtn.className = 'frame-btn';
-            frameBtn.dataset.frame = 'uploaded_' + frameData.id;
-            frameBtn.innerHTML = `
-                <div class="frame-preview-mini uploaded-preview" style="background-image: url('${frameData.data}'); background-size: cover; background-position: center;"></div>
-                <span>${frameData.name}</span>
-            `;
-            
-            frameBtn.addEventListener('click', function() {
-                selectFrameButton(this);
-            });
-            
-            frameButtons.appendChild(frameBtn);
-        }
-
-        function updateUploadedFramesList() {
-            const container = document.getElementById('uploadedFrames');
-            container.innerHTML = '';
-            
-            uploadedFrames.forEach(frame => {
-                const frameItem = document.createElement('div');
-                frameItem.className = 'frame-item';
-                frameItem.innerHTML = `
-                    <span class="frame-name">${frame.name}</span>
-                    <button class="delete-btn" onclick="deleteUploadedFrame(${frame.id})">ลบ</button>
-                `;
-                container.appendChild(frameItem);
-            });
-        }
-
-        function deleteUploadedFrame(frameId) {
-            uploadedFrames = uploadedFrames.filter(frame => frame.id !== frameId);
-            updateUploadedFramesList();
-            
-            // Remove from frame buttons
-            const frameBtn = document.querySelector(`[data-frame="uploaded_${frameId}"]`);
-            if (frameBtn) {
-                // If this frame was selected, select "no frame" option
-                if (frameBtn.classList.contains('active')) {
-                    const noFrameBtn = document.querySelector('[data-frame=""]');
-                    if (noFrameBtn) {
-                        selectFrameButton(noFrameBtn);
-                    }
-                }
-                frameBtn.remove();
-            }
-        }
-
-        async function capturePhoto() {
-            if (!video.videoWidth || !video.videoHeight) {
-                showError('กล้องยังไม่พร้อม กรุณารอสักครู่');
-                return;
-            }
-
-            showLoading(true);
-
-            try {
-                // Set canvas size to match video
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-
-                // Draw video frame to canvas
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                // Get selected frame
-                const activeBtn = document.querySelector('.frame-btn.active');
-                const selectedValue = activeBtn ? activeBtn.dataset.frame : '';
-                
-                if (selectedValue) {
-                    let frameImageData;
-                    
-                    if (selectedValue.startsWith('uploaded_')) {
-                        const frameId = parseInt(selectedValue.replace('uploaded_', ''));
-                        const uploadedFrame = uploadedFrames.find(f => f.id === frameId);
-                        frameImageData = uploadedFrame ? uploadedFrame.data : null;
-                    } else {
-                        frameImageData = builtInFrames[selectedValue];
-                    }
-                    
-                    if (frameImageData) {
-                        await overlayFrame(frameImageData);
-                    }
-                }
-
-                // Store captured image data
-                capturedImageData = canvas.toDataURL('image/png');
-
-                // Generate QR Code
-                generateQRCode(capturedImageData);
-
-                // Show result section
-                showResult();
-
-            } catch (error) {
-                console.error('Error capturing photo:', error);
-                showError('เกิดข้อผิดพลาดในการถ่ายภาพ');
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        function overlayFrame(frameImageData) {
-            return new Promise((resolve, reject) => {
-                const frameImg = new Image();
-                frameImg.onload = function() {
-                    // Draw frame overlay on top of the captured image
-                    ctx.drawImage(frameImg, 0, 0, canvas.width, canvas.height);
-                    resolve();
-                };
-                frameImg.onerror = reject;
-                frameImg.src = frameImageData;
-            });
-        }
-
-        // Function to show frame preview on video
-        function showFramePreview() {
-            const activeBtn = document.querySelector('.frame-btn.active');
-            if (!activeBtn) return;
-            
-            const selectedValue = activeBtn.dataset.frame;
-            if (!selectedValue) {
-                clearFramePreview();
-                return;
-            }
-            
-            // Wait for video to be ready
-            if (!video.videoWidth || !video.videoHeight) {
-                setTimeout(showFramePreview, 100);
-                return;
-            }
-            
-            // Create preview canvas
-            let previewCanvas = document.getElementById('framePreview');
-            if (!previewCanvas) {
-                previewCanvas = document.createElement('canvas');
-                previewCanvas.id = 'framePreview';
-                previewCanvas.style.cssText = `
-                    position: absolute;
-                    top: 0;
-                    left: 0;
-                    pointer-events: none;
-                    z-index: 10;
-                    border-radius: 15px;
-                `;
-                video.parentElement.style.position = 'relative';
-                video.parentElement.appendChild(previewCanvas);
-            }
-            
-            // Get video's computed style and actual dimensions
-            const videoStyle = window.getComputedStyle(video);
-            const videoRect = video.getBoundingClientRect();
-            
-            // Set canvas to exactly match video element size and position
-            previewCanvas.style.width = video.offsetWidth + 'px';
-            previewCanvas.style.height = video.offsetHeight + 'px';
-            previewCanvas.width = video.offsetWidth;
-            previewCanvas.height = video.offsetHeight;
-            
-            // Calculate the actual video content area (considering object-fit: cover)
-            const videoAspectRatio = video.videoWidth / video.videoHeight;
-            const containerAspectRatio = video.offsetWidth / video.offsetHeight;
-            
-            let contentWidth, contentHeight, offsetX, offsetY;
-            
-            if (containerAspectRatio > videoAspectRatio) {
-                // Container is wider than video - video fills height, width is centered
-                contentHeight = video.offsetHeight;
-                contentWidth = contentHeight * videoAspectRatio;
-                offsetX = (video.offsetWidth - contentWidth) / 2;
-                offsetY = 0;
-            } else {
-                // Container is taller than video - video fills width, height is centered
-                contentWidth = video.offsetWidth;
-                contentHeight = contentWidth / videoAspectRatio;
-                offsetX = 0;
-                offsetY = (video.offsetHeight - contentHeight) / 2;
-            }
-            
-            const previewCtx = previewCanvas.getContext('2d');
-            previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-            
-            let frameImageData;
-            if (selectedValue.startsWith('uploaded_')) {
-                const frameId = parseInt(selectedValue.replace('uploaded_', ''));
-                const uploadedFrame = uploadedFrames.find(f => f.id === frameId);
-                frameImageData = uploadedFrame ? uploadedFrame.data : null;
-            } else {
-                frameImageData = builtInFrames[selectedValue];
-            }
-            
-            if (frameImageData) {
-                const frameImg = new Image();
-                frameImg.onload = function() {
-                    // Set transparency for preview
-                    previewCtx.globalAlpha = 0.7;
-                    
-                    // Draw frame exactly over the video content area
-                    previewCtx.drawImage(frameImg, offsetX, offsetY, contentWidth, contentHeight);
-                    
-                    // Reset alpha
-                    previewCtx.globalAlpha = 1.0;
-                };
-                frameImg.src = frameImageData;
-            }
-        }
-
-        // Function to clear frame preview
-        function clearFramePreview() {
-            const previewCanvas = document.getElementById('framePreview');
-            if (previewCanvas) {
-                const previewCtx = previewCanvas.getContext('2d');
-                previewCtx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-            }
-        }
-
-        function generateQRCode(imageData) {
-            const qrContainer = document.getElementById('qrcode');
-            qrContainer.innerHTML = '';
-            
-            try {
-                const qr = new QRCode(qrContainer, {
-                    text: imageData,
-                    width: 150,
-                    height: 150,
-                    colorDark: '#7b3fe4',
-                    colorLight: '#ffffff',
-                    correctLevel: QRCode.CorrectLevel.M
-                });
-            } catch (error) {
-                console.error('Error generating QR code:', error);
-                qrContainer.innerHTML = '<div style="width: 150px; height: 150px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; border-radius: 10px;">QR Code<br>Error</div>';
-            }
-        }
-
-        function downloadImage() {
-            if (capturedImageData) {
-                const link = document.createElement('a');
-                link.download = `RVC_Photo_${new Date().getTime()}.png`;
-                link.href = capturedImageData;
-                link.click();
-            }
-        }
-
-        function retakePhoto() {
-            document.getElementById('resultSection').style.display = 'none';
-            document.querySelector('.main-content').style.display = 'grid';
-            capturedImageData = null;
-        }
-
-        function showResult() {
-            document.querySelector('.main-content').style.display = 'none';
-            document.getElementById('resultSection').style.display = 'block';
-        }
-
-        function showLoading(show) {
-            document.getElementById('loading').style.display = show ? 'block' : 'none';
-        }
-
-        function showError(message) {
-            // Create a simple error display
-            const errorDiv = document.createElement('div');
-            errorDiv.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: #dc3545;
-                color: white;
-                padding: 15px;
-                border-radius: 10px;
-                z-index: 1000;
-                max-width: 300px;
-            `;
-            errorDiv.textContent = message;
-            document.body.appendChild(errorDiv);
-            
-            setTimeout(() => {
-                document.body.removeChild(errorDiv);
-            }, 5000);
-        }
-
-        // Cleanup function
-        window.addEventListener('beforeunload', function() {
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => track.stop());
-            }
-        });
-    </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'995e6fca06a426c1',t:'MTc2MTY5NjQ4OC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+document.getElementById('snap').onclick=()=>{
+  if(!frames.length){alert("ยังไม่ได้อัปโหลดกรอบ");return;}
+  const c=document.createElement('canvas');
+  c.width=video.videoWidth; c.height=video.videoHeight;
+  const ctx=c.getContext('2d');
+  ctx.drawImage(video,0,0);
+  if(frames[currentFrameIndex]) ctx.drawImage(frames[currentFrameIndex],0,0,c.width,c.height);
+  const url=c.toDataURL('image/png');
+  const a=document.createElement('a');
+  a.href=url; a.download="rvc101-photo.png"; a.click();
+  document.getElementById('qrcode').innerHTML='';
+  new QRCode(document.getElementById('qrcode'), url);
+  document.getElementById('download').disabled=false;
+};
+document.getElementById('retake').onclick=()=>{openCamera();startLoop();}
+</script>
+</body>
 </html>
