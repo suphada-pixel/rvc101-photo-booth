@@ -162,3 +162,81 @@ frameInput.addEventListener('change',e=>{
     const thumb=document.createElement('div');
     thumb.className='frame-thumb';
     thumb.innerHTML=`<img src="${url}">`;
+    thumb.onclick=()=>selectFrame(i);
+    frameList.appendChild(thumb);
+  });
+});
+document.getElementById('openCam').onclick=openCamera;
+
+// 📸 ถ่ายภาพพร้อมนับถอยหลัง
+document.getElementById('snap').onclick=async ()=>{
+  if(!frames.length){alert("ยังไม่ได้อัปโหลดกรอบ");return;}
+  await countdownSequence(3); // เริ่มนับถอยหลัง
+  takePhoto();
+};
+
+// นับถอยหลัง
+function countdownSequence(seconds){
+  return new Promise(resolve=>{
+    let count=seconds;
+    countdown.textContent=count;
+    countdown.style.opacity=1;
+    const interval=setInterval(()=>{
+      count--;
+      if(count>0){countdown.textContent=count;}
+      else{
+        clearInterval(interval);
+        countdown.style.opacity=0;
+        flashEffect();
+        setTimeout(()=>resolve(),300);
+      }
+    },1000);
+  });
+}
+
+// เอฟเฟกต์แฟลช
+function flashEffect(){
+  flash.style.opacity=1;
+  setTimeout(()=>flash.style.opacity=0,400);
+}
+
+// ถ่ายภาพจริง
+function takePhoto(){
+  const c=document.createElement('canvas');
+  c.width=video.videoWidth; c.height=video.videoHeight;
+  const ctx=c.getContext('2d');
+  ctx.drawImage(video,0,0);
+  if(frames[currentFrameIndex]) ctx.drawImage(frames[currentFrameIndex],0,0,c.width,c.height);
+  resultURL=c.toDataURL('image/png');
+  stopLoop();
+  video.style.display='none';
+  frameCanvas.style.display='none';
+  document.getElementById('tip').style.display='none';
+  document.getElementById('mainControls').style.display='none';
+  document.getElementById('previewImage').src=resultURL;
+  document.getElementById('previewControls').style.display='block';
+}
+
+// ✅ ดาวน์โหลดภาพ
+document.getElementById('download').onclick=()=>{
+  const a=document.createElement('a');
+  a.href=resultURL; a.download="rvc101-photo.png"; a.click();
+  document.getElementById('qrcode').innerHTML='';
+  new QRCode(document.getElementById('qrcode'), resultURL);
+};
+
+// 🔁 ถ่ายใหม่
+document.getElementById('again').onclick=()=>{
+  document.getElementById('previewControls').style.display='none';
+  video.style.display='block';
+  frameCanvas.style.display='block';
+  document.getElementById('mainControls').style.display='block';
+  document.getElementById('tip').style.display='block';
+  document.getElementById('qrcode').innerHTML='';
+  openCamera();
+  startLoop();
+};
+document.getElementById('retake').onclick=()=>{openCamera();startLoop();}
+</script>
+</body>
+</html>
